@@ -1,32 +1,36 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
+    <div class="routerView">
+      <router-view></router-view>
     </div>
-    <router-view/>
+    <User></User>
+    <Menu></Menu>
   </div>
 </template>
 
 <style>
+@import "../src/assets/style/reset.css";
+
+body {
+  background: #fcfaf1;
+}
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
+  position: relative;
 }
-
-#nav {
-  padding: 30px;
-}
-
-#nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-#nav a.router-link-exact-active {
-  color: #42b983;
+#app .routerView {
+  position: absolute;
+  top: 20vh;
+  left: 8vw;
+  width: 87vw;
+  height: 70vh;
+  /* background: rosybrown; */
 }
 </style>
+
+<script>
+import Menu from "./components/menu.vue";
+import User from "./components/userBox.vue";
+export default {
+  components: { Menu, User },
+};
+</script>

@@ -12,7 +12,7 @@
 @import "../src/assets/style/reset.css";
 
 body {
-  background: #fcfaf1;
+  background: #fdf2d6;
 }
 #app {
   position: relative;

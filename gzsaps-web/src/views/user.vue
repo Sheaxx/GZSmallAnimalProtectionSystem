@@ -218,4 +218,7 @@ export default {
   float: right;
   margin-left: 20px!important;
 }
+#user .el-input__inner:focus {
+  border-color: #ff7f41;
+}
 </style>

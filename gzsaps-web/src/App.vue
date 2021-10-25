@@ -1,36 +1,18 @@
 <template>
   <div id="app">
-    <div class="routerView">
-      <router-view></router-view>
-    </div>
-    <User></User>
-    <Menu></Menu>
+    <router-view></router-view>
   </div>
 </template>
 
 <style>
 @import "../src/assets/style/reset.css";
 
-body {
-  background: #fdf2d6;
-}
-#app {
-  position: relative;
-}
-#app .routerView {
-  position: absolute;
-  top: 20vh;
-  left: 8vw;
-  width: 87vw;
-  height: 70vh;
-  /* background: rosybrown; */
-}
 </style>
 
 <script>
-import Menu from "./components/menu.vue";
-import User from "./components/userBox.vue";
+import Login from "./views/login.vue";
+import Index from "./views/index.vue";
 export default {
-  components: { Menu, User },
+  components: { Index, Login },
 };
 </script>

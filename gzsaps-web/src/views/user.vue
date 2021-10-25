@@ -68,7 +68,7 @@
           <el-input v-model="user.address"></el-input>
         </el-form-item>
         <el-form-item>
-          <el-button type="warning" @click="onSubmit">修改</el-button>
+          <el-button type="warning" @click="editUser">修改</el-button>
           <el-button type="warning" plain @click="cancelEdit">取消</el-button>
         </el-form-item>
       </el-form>
@@ -136,20 +136,13 @@ export default {
           timestamp: "2018-04-13",
         },
       ],
-      form: {
-        name: "",
-        region: "",
-        date1: "",
-        date2: "",
-        delivery: false,
-        type: [],
-        resource: "",
-        desc: "",
-      },
     };
   },
   methods: {
-    editUser() {},
+    //修改个人信息
+    editUser() {
+      this.readOnly = true;
+    },
     //打开修改
     openEdit() {
       this.readOnly = false;
@@ -157,7 +150,7 @@ export default {
     //取消修改
     cancelEdit() {
       this.readOnly = true;
-    }
+    },
   },
 };
 </script>
@@ -180,7 +173,7 @@ export default {
   box-shadow: 0px 0px 10px 5px rgba(0, 0, 0, 0.2);
   overflow: hidden;
 }
-.title {
+#user .title {
   font-size: 16px;
   font-weight: 700;
   margin-bottom: 25px;

@@ -2,33 +2,44 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 
 import User from '../views/user'
+import Index from '../views/index'
 
 Vue.use(VueRouter)
 
 const routes = [
 	{
-		path:'',
-		redirect:'/user'
+		path: '',
+		redirect: '/user'
 	},
 	{
-		path:'/user',
-		component:User
+		path: '/index',
+		component: Index,
+		children: [
+			{
+				path:'/user',
+				component:User
+			},
+			{
+				path: '/notice',
+				component: () => import('../views/notice')
+			},
+			{
+				path: '/information',
+				component: () => import('../views/information')
+			},
+			{
+				path: '/adoption',
+				component: () => import('../views/adoption')
+			},
+			{
+				path: '/project',
+				component: () => import('../views/project')
+			}
+		]
 	},
 	{
-		path:'/notice',
-		component:() => import('../views/notice')
-	},
-	{
-		path:'/information',
-		component:() => import('../views/information')
-	},
-	{
-		path:'/adoption',
-		component:() => import('../views/adoption')
-	},
-	{
-		path:'/project',
-		component:() => import('../views/project')
+		path: '/login',
+		component: () => import('../views/login')
 	}
 ]
 

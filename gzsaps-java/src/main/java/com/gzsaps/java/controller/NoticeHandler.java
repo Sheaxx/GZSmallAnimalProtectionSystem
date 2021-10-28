@@ -3,9 +3,12 @@ package com.gzsaps.java.controller;
 import com.gzsaps.java.entity.Notice;
 import com.gzsaps.java.repository.NoticeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Date;
 
 @RestController
 @RequestMapping("/notice")
@@ -14,9 +17,10 @@ public class NoticeHandler {
   @Autowired
   private NoticeRepository noticeRepository;
 
-  @GetMapping("/findAll")
-  public List<Notice> findAll() {
-    return noticeRepository.findAll();
+  @GetMapping("/findAll/{page}/{size}")
+  public Page<Notice> findAll(@PathVariable("page") Integer page,@PathVariable("size") Integer size) {
+    Pageable pageable = PageRequest.of(page-1,size);
+    return noticeRepository.findAll(pageable);
   }
 
   @GetMapping("/find/{id}")
@@ -26,6 +30,8 @@ public class NoticeHandler {
 
   @PostMapping("/save")
   public String save(@RequestBody Notice notice) {
+    notice.setCreatetime(new Date());
+    notice.setLastmodifiedtime(new Date());
     Notice result = noticeRepository.save(notice);
     if(result != null) {
       return "success";
@@ -36,6 +42,7 @@ public class NoticeHandler {
 
   @PutMapping("/update")
   public String update(@RequestBody Notice notice){
+    notice.setLastmodifiedtime(new Date());
     Notice result = noticeRepository.save(notice);
     if(result != null) {
       return "success";

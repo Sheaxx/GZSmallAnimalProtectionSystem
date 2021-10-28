@@ -25,10 +25,10 @@ body {
 }
 .routerView {
   position: absolute;
-  top: 20vh;
+  top: 15vh;
   left: 8vw;
   width: 87vw;
-  height: 70vh;
+  height: 76vh;
   /* background: rosybrown; */
 }
 </style>

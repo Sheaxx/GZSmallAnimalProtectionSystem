@@ -14,6 +14,6 @@ public class Information {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Integer informationid;
-  private StringBuilder title;
-  private StringBuilder content;
+  private String title;
+  private String content;
 }

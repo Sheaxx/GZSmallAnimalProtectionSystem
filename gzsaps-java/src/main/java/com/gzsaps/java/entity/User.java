@@ -9,10 +9,10 @@ import javax.persistence.Id;
 @Data
 public class User {
   @Id
-  private StringBuilder username;
-  private StringBuilder password;
-  private StringBuilder realname;
-  private StringBuilder tel;
-  private StringBuilder address;
+  private String username;
+  private String password;
+  private String realname;
+  private String tel;
+  private String address;
   private Integer role;
 }

@@ -1,8 +1,14 @@
 <template>
   <div id="notice">
     <h4 class="boxTitle"><i class="el-icon-message-solid"></i>公告</h4>
-    <el-button type="warning" @click="openAddMessage" v-if="showList">添加公告</el-button>
+    <el-button type="warning" @click="openAddMessage" v-if="showList"
+      >添加公告</el-button
+    >
     <el-button type="warning" @click="toList" v-else>返回列表</el-button>
+    <div class="search" v-show="showList">
+      <el-input placeholder="请输入公告编号"></el-input>
+      <el-button type="warning" icon="el-icon-search">搜索</el-button>
+    </div>
     <el-timeline v-show="showList">
       <el-timeline-item
         placement="top"
@@ -12,7 +18,9 @@
         :timestamp="item.createtime"
       >
         <el-card>
-          <h5 @click="toDetails">{{ item.title }}</h5>
+          <h5 @click="toDetails(index)">
+            NO.{{ item.noticeid }}：{{ item.title }}
+          </h5>
           <div class="option">
             <a href="" @click.prevent="openUpdateMessage(index)">修改</a>
             <a href="" @click.prevent="openDeleteMessage(index)">删除</a>
@@ -20,7 +28,14 @@
         </el-card>
       </el-timeline-item>
     </el-timeline>
-    <el-pagination layout="prev, pager, next" :total="50" v-show="showList"> </el-pagination>
+    <el-pagination
+      layout="prev, pager, next"
+      :total="total"
+      v-show="showList"
+      :page-size="6"
+      @current-change="page"
+    >
+    </el-pagination>
 
     <div class="coverBox" v-show="showMessage">
       <div class="messageBox">
@@ -34,7 +49,6 @@
               v-model="noticeForm.content"
               rows="10"
               resize="none"
-              maxlength="500"
               show-word-limit
             ></el-input>
           </el-form-item>
@@ -62,8 +76,8 @@
     </div>
 
     <div class="details" v-show="!showList">
-      <h4>{{noticeForm.title}}</h4>
-      <p>{{noticeForm.content}}</p>
+      <h4>{{ noticeForm.title }}</h4>
+      <p>{{ noticeForm.content }}</p>
     </div>
   </div>
 </template>
@@ -77,51 +91,27 @@ export default {
       showDelete: false,
       isAdd: false,
       currentIndex: 0,
-      notices: [
-        {
-          title: "1kkkkkkkkkk",
-          createtime: "2021-10-13 18:35:00",
-        },
-        {
-          title: "2hhhhhhhhhhhhhhhhhhhhh",
-          createtime: "2021-10-13 18:35:00",
-        },
-        {
-          title: "3hhhhhhhhhhhhhhhhhhhhh",
-          createtime: "2021-10-13 18:35:00",
-        },
-        {
-          title: "4hhhhhhhhhhhhhhhhhhhhh",
-          createtime: "2021-10-13 18:35:00",
-        },
-        {
-          title: "5hhhhhhhhhhhhhhhhhhhhh",
-          createtime: "2021-10-13 18:35:00",
-        },
-        {
-          title: "6hhhhhhhhhhhhhhhhhhhhh",
-          createtime: "2021-10-13 18:35:00",
-        },
-      ],
+      total: 0,
+      notices: [],
       noticeForm: {
-        title: "6hhhhhhhhhhhhhhhhhhhhh",
-        content:
-          "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+        noticeid: 0,
+        title: "",
+        content: "",
       },
     };
   },
   methods: {
     //打开添加公告界面
     openAddMessage() {
-      this.noticeForm.title = "";
-      this.noticeForm.content = "";
+      for (let item in this.noticeForm) {
+        this.noticeForm[item] = null;
+      }
       this.isAdd = true;
       this.showMessage = true;
     },
     //打开修改公告界面
     openUpdateMessage(index) {
-      this.noticeForm.title = this.notices[index].title;
-      this.noticeForm.content = this.notices[index].content;
+      Object.assign(this.noticeForm, this.notices[index]);
       this.isAdd = false;
       this.currentIndex = index;
       this.showMessage = true;
@@ -138,19 +128,44 @@ export default {
     },
     //发布公告
     onSubmit() {
+      let that = this;
       let obj = {};
       obj.title = this.noticeForm.title;
       obj.content = this.noticeForm.content;
+      obj.author = this.$store.state.username;
       if (this.isAdd) {
-        this.notices.unshift(obj);
+        //新增公告
+        this.$ajax
+          .post("http://localhost:8081/notice/save", obj)
+          .then(function (res) {
+            if (res.data == "success") {
+              that.notices.unshift(obj);
+              that.showMessage = false;
+              that.$message({
+                message: "发布成功",
+                type: "success",
+              });
+            }
+          })
+          .catch((err) => console.log(err));
       } else {
-        this.notices[this.currentIndex] = obj;
+        //修改公告
+        obj.noticeid = this.notices[this.currentIndex].noticeid;
+        obj.createtime = this.notices[this.currentIndex].createtime;
+        this.$ajax
+          .put("http://localhost:8081/notice/update", obj)
+          .then(function (res) {
+            if (res.data == "success") {
+              that.notices[that.currentIndex] = obj;
+              that.showMessage = false;
+              that.$message({
+                message: "修改成功",
+                type: "success",
+              });
+            }
+          })
+          .catch((err) => console.log(err));
       }
-      this.showMessage = false;
-      this.$message({
-        message: "发布成功",
-        type: "success",
-      });
     },
     //取消删除
     cancelDelete() {
@@ -159,21 +174,53 @@ export default {
     },
     //删除公告
     deleteNotice() {
-      this.notices.splice(this.currentIndex, 1);
-      this.showDelete = false;
-      this.$message({
-        message: "删除成功",
-        type: "success",
-      });
+      let that = this;
+      this.$ajax
+        .delete(
+          "http://localhost:8081/notice/delete/" +
+            this.notices[this.currentIndex].noticeid
+        )
+        .then(function () {
+          that.notices.splice(that.currentIndex, 1);
+          that.showDelete = false;
+          that.$message({
+            message: "删除成功",
+            type: "success",
+          });
+        })
+        .catch((err) => console.log(err));
     },
     //查看详情
-    toDetails() {
+    toDetails(index) {
       this.showList = false;
+      Object.assign(this.noticeForm, this.notices[index]);
     },
     //详情返回列表
     toList() {
       this.showList = true;
     },
+    //分页改变
+    page(currentPage) {
+      let that = this;
+      this.$ajax
+        .get("http://localhost:8081/notice/findAll/" + currentPage + "/6")
+        .then((res) => {
+          that.notices = res.data.content;
+          that.total = res.data.totalElements;
+        })
+        .catch((error) => console.log(error));
+    },
+  },
+  //开始时获取全部公告
+  created() {
+    let that = this;
+    this.$ajax
+      .get("http://localhost:8081/notice/findAll/1/6")
+      .then((res) => {
+        that.notices = res.data.content;
+        that.total = res.data.totalElements;
+      })
+      .catch((error) => console.log(error));
   },
 };
 </script>
@@ -190,25 +237,33 @@ export default {
 .boxTitle {
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 3%;
+  margin-bottom: 2%;
   overflow: hidden;
   width: 90%;
 }
 #notice .el-button {
   float: right;
-  margin-top: -6%;
+  margin-top: -5%;
   margin-right: 2%;
 }
 #notice h5 {
   font-size: 16px;
   margin: 10px;
 }
-#notice i {
+.el-icon-message-solid {
   margin-right: 20px;
 }
 #notice a {
   margin: 10px 5px 10px 10px;
   overflow: hidden;
+}
+.search {
+  display: flex;
+  padding: 0 5%;
+  margin-bottom: 2%;
+}
+#notice .search .el-button {
+  margin: 0;
 }
 #notice .el-pagination {
   text-align: center;
@@ -227,7 +282,7 @@ export default {
 }
 #notice .el-timeline {
   width: 100%;
-  height: 80%;
+  height: 75%;
   overflow-y: scroll;
 }
 #notice .el-timeline-item {
@@ -239,7 +294,7 @@ export default {
   z-index: 999;
   width: 101vw;
   height: 99.5vh;
-  top: -20vh;
+  top: -15vh;
   left: -9vw;
   background: rgba(0, 0, 0, 0.3);
 }
@@ -297,8 +352,13 @@ export default {
 h5 {
   cursor: pointer;
 }
-.details h4{
-  font-size: 20px;
-  margin: 10px 0;
+.details {
+  white-space: pre-wrap;
+  line-height: 20px;
+}
+.details h4 {
+  text-align: center;
+  font-size: 22px;
+  margin: 15px 0 24px 0;
 }
 </style>

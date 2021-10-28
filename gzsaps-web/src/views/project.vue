@@ -1,8 +1,14 @@
 <template>
   <div id="project">
     <h4 class="boxTitle"><i class="el-icon-s-flag"></i>志愿者项目</h4>
-    <el-button type="warning" @click="openAddMessage"  v-if="showList">添加项目</el-button>
+    <el-button type="warning" @click="openAddMessage" v-if="showList"
+      >添加项目</el-button
+    >
     <el-button type="warning" @click="toList" v-else>返回列表</el-button>
+    <div class="search" v-show="showList">
+      <el-input placeholder="请输入志愿者项目编号"></el-input>
+      <el-button type="warning" icon="el-icon-search">搜索</el-button>
+    </div>
     <el-timeline v-show="showList">
       <el-timeline-item
         placement="top"
@@ -12,7 +18,9 @@
         :timestamp="item.createtime"
       >
         <el-card>
-          <h5 @click="toDetails">{{ item.title }}</h5>
+          <h5 @click="toDetails(index)">
+            NO.{{ item.projectid }}：{{ item.title }}
+          </h5>
           <div class="option">
             <a href="" @click.prevent="openUpdateMessage(index)">修改</a>
             <a href="" @click.prevent="openDeleteMessage(index)">删除</a>
@@ -20,7 +28,14 @@
         </el-card>
       </el-timeline-item>
     </el-timeline>
-    <el-pagination layout="prev, pager, next" :total="50" v-show="showList"> </el-pagination>
+    <el-pagination
+      layout="prev, pager, next"
+      :total="total"
+      v-show="showList"
+      :page-size="6"
+      @current-change="page"
+    >
+    </el-pagination>
 
     <div class="coverBox" v-show="showMessage">
       <div class="messageBox">
@@ -39,29 +54,24 @@
             ></el-input>
           </el-form-item>
           <el-form-item label="活动时间">
-            <el-col :span="11">
-              <el-date-picker
-                type="datetime"
-                placeholder="选择日期"
-                v-model="projectForm.beginTime"
-                style="width: 100%"
-              ></el-date-picker>
-            </el-col>
-            <el-col class="line" :span="2">————</el-col>
-            <el-col :span="11">
-              <el-date-picker
-                type="datetime"
-                placeholder="选择日期"
-                v-model="projectForm.endTime"
-                style="width: 100%"
-              ></el-date-picker>
-            </el-col>
+            <el-date-picker
+              v-model="time"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              value-format="yyyy-MM-dd HH:mm:ss"
+            >
+            </el-date-picker>
+          </el-form-item>
+          <el-form-item label="活动地址">
+            <el-input v-model="projectForm.address"></el-input>
           </el-form-item>
           <el-form-item label="负责人">
             <el-input v-model="projectForm.principal"></el-input>
           </el-form-item>
           <el-form-item label="联系方式">
-            <el-input v-model="projectForm.principalTel"></el-input>
+            <el-input v-model="projectForm.principaltel"></el-input>
           </el-form-item>
           <el-form-item>
             <el-button type="warning" plain @click="cancelMessage"
@@ -87,8 +97,8 @@
     </div>
 
     <div class="details" v-show="!showList">
-      <h4>{{projectForm.title}}</h4>
-      <p>{{projectForm.content}}</p>
+      <h4>{{ projectForm.title }}</h4>
+      <p>{{ projectForm.content }}</p>
     </div>
   </div>
 </template>
@@ -102,51 +112,34 @@ export default {
       showDelete: false,
       isAdd: false,
       currentIndex: 0,
-      projects: [
-        {
-          title: "hhhhhhhhhhhhhhhhhhhhh",
-          createtime: "2021-10-13 18:35:00",
-        },
-        {
-          title: "hhhhhhhhhhhhhhhhhhhhh",
-          createtime: "2021-10-13 18:35:00",
-        },
-        {
-          title: "hhhhhhhhhhhhhhhhhhhhh",
-          createtime: "2021-10-13 18:35:00",
-        },
-        {
-          title: "hhhhhhhhhhhhhhhhhhhhh",
-          createtime: "2021-10-13 18:35:00",
-        },
-        {
-          title: "hhhhhhhhhhhhhhhhhhhhh",
-          createtime: "2021-10-13 18:35:00",
-        },
-      ],
+      total: 0,
+      time: [],
+      projects: [],
       projectForm: {
-        title: "111111111111",
-        content: "11111111",
-        address: "1111111",
-        beginTime: "111111",
-        endTime: "1111111",
-        principal: "11111",
-        principalTel: "11111",
+        projectid: null,
+        title: "",
+        content: "",
+        address: "",
+        begintime: "",
+        endtime: "",
+        principal: "",
+        principaltel: "",
+        applicantlist: "",
       },
     };
   },
   methods: {
     //打开添加项目界面
     openAddMessage() {
-      this.projectForm.title = "";
-      this.projectForm.content = "";
+      for (let item in this.projectForm) {
+        this.projectForm[item] = null;
+      }
       this.isAdd = true;
       this.showMessage = true;
     },
     //打开修改项目界面
     openUpdateMessage(index) {
-      this.projectForm.title = this.projects[index].title;
-      this.projectForm.content = this.projects[index].content;
+      Object.assign(this.projectForm, this.projects[index]);
       this.isAdd = false;
       this.currentIndex = index;
       this.showMessage = true;
@@ -163,19 +156,68 @@ export default {
     },
     //发布项目
     onSubmit() {
+      let that = this;
       let obj = {};
       obj.title = this.projectForm.title;
       obj.content = this.projectForm.content;
+      obj.address = this.projectForm.address;
+      obj.begintime = this.time[0];
+      obj.endtime = this.time[1];
+      obj.principal = this.projectForm.principal;
+      obj.principaltel = this.projectForm.principaltel;
+      obj.author = this.$store.state.username;
       if (this.isAdd) {
-        this.projects.unshift(obj);
+        //新增项目
+        if (this.$store.state.role == 1) {
+          //志愿者身份
+          obj.status = 0;
+        } else if (this.$store.state.role == 2) {
+          //管理员身份
+          obj.status = 1;
+        }
+        (obj.applicantlist = ""), console.log(obj);
+        console.log(this.time);
+        this.$ajax
+          .post("http://localhost:8081/project/save", obj)
+          .then(function (res) {
+            if (res.data == "success") {
+              that.projects.unshift(obj);
+              that.showMessage = false;
+              if ($store.state.role == 1) {
+                //志愿者身份
+                that.$message({
+                  message: "提交成功，待管理员审核",
+                  type: "success",
+                });
+              } else if ($store.state.role == 2) {
+                //管理员身份
+                that.$message({
+                  message: "发布成功",
+                  type: "success",
+                });
+              }
+            }
+          })
+          .catch((err) => console.log(err));
       } else {
-        this.projects[this.currentIndex] = obj;
+        //修改项目
+        obj.projectid = this.projects[this.currentIndex].projectid;
+        obj.createtime = this.projects[this.currentIndex].createtime;
+        obj.applicantlist = this.projects[this.currentIndex].applicantlist;
+        this.$ajax
+          .put("http://localhost:8081/project/update", obj)
+          .then(function (res) {
+            if (res.data == "success") {
+              that.projects[that.currentIndex] = obj;
+              that.showMessage = false;
+              that.$message({
+                message: "修改成功",
+                type: "success",
+              });
+            }
+          });
+        that.projects[this.currentIndex] = obj;
       }
-      this.showMessage = false;
-      this.$message({
-        message: "发布成功",
-        type: "success",
-      });
     },
     //取消删除
     cancelDelete() {
@@ -184,21 +226,53 @@ export default {
     },
     //删除项目
     deleteproject() {
-      this.projects.splice(this.currentIndex, 1);
-      this.showDelete = false;
-      this.$message({
-        message: "删除成功",
-        type: "success",
-      });
+      let that = this;
+      this.$ajax
+        .delete(
+          "http://localhost:8081/project/delete/" +
+            this.projects[this.currentIndex].projectid
+        )
+        .then(function () {
+          that.projects.splice(that.currentIndex, 1);
+          that.showDelete = false;
+          that.$message({
+            message: "删除成功",
+            type: "success",
+          });
+        })
+        .catch((err) => console.log(err));
     },
     //查看详情
-    toDetails() {
+    toDetails(index) {
       this.showList = false;
+      Object.assign(this.projectForm, this.projects[index]);
     },
     //详情返回列表
     toList() {
       this.showList = true;
     },
+    //分页改变
+    page(currentPage) {
+      let that = this;
+      this.$ajax
+        .get("http://localhost:8081/project/findAll/" + currentPage + "/6")
+        .then((res) => {
+          that.projects = res.data.content;
+          that.total = res.data.totalElements;
+        })
+        .catch((error) => console.log(error));
+    },
+  },
+  //开始时获取全部项目
+  created() {
+    let that = this;
+    this.$ajax
+      .get("http://localhost:8081/project/findAll/1/6")
+      .then((res) => {
+        that.projects = res.data.content;
+        that.total = res.data.totalElements;
+      })
+      .catch((error) => console.log(error));
   },
 };
 </script>
@@ -215,25 +289,33 @@ export default {
 .boxTitle {
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 3%;
+  margin-bottom: 2%;
   overflow: hidden;
   width: 90%;
 }
 #project .el-button {
   float: right;
-  margin-top: -6%;
+  margin-top: -5%;
   margin-right: 2%;
 }
 #project h5 {
   font-size: 16px;
   margin: 10px;
 }
-#project i {
+.el-icon-s-flag {
   margin-right: 20px;
 }
 #project a {
   margin: 10px 5px 10px 10px;
   overflow: hidden;
+}
+.search {
+  display: flex;
+  padding: 0 5%;
+  margin-bottom: 2%;
+}
+#project .search .el-button {
+  margin: 0;
 }
 #project .el-pagination {
   text-align: center;
@@ -252,7 +334,7 @@ export default {
 }
 #project .el-timeline {
   width: 100%;
-  height: 80%;
+  height: 75%;
   overflow-y: scroll;
 }
 #project .el-timeline-item {
@@ -264,7 +346,7 @@ export default {
   z-index: 999;
   width: 101vw;
   height: 99.5vh;
-  top: -20vh;
+  top: -15vh;
   left: -9vw;
   background: rgba(0, 0, 0, 0.3);
 }
@@ -322,7 +404,12 @@ export default {
 h5 {
   cursor: pointer;
 }
-.details h4{
+.details {
+  white-space: pre-wrap;
+  line-height: 20px;
+}
+.details h4 {
+  text-align: center;
   font-size: 20px;
   margin: 10px 0;
 }

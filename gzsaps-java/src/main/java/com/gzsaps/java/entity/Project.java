@@ -7,6 +7,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import java.sql.Timestamp;
+import java.util.Date;
+import java.util.List;
 
 @Entity
 @Data
@@ -14,16 +16,16 @@ public class Project {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Integer projectid;
-  private StringBuilder title;
-  private StringBuilder content;
-  private StringBuilder address;
-  private Timestamp begintime;
-  private Timestamp endtime;
-  private StringBuilder principal;
-  private StringBuilder principaltel;
-  private StringBuilder author;
-  private Timestamp createtime;
-  private Timestamp lastmodifiedtime;
+  private String title;
+  private String content;
+  private String address;
+  private Date begintime;
+  private Date endtime;
+  private String principal;
+  private String principaltel;
+  private String author;
+  private Date createtime;
+  private Date lastmodifiedtime;
   private Integer status;
-  private StringBuilder applicantlist;
+  private String applicantlist;
 }

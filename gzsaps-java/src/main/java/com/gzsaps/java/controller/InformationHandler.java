@@ -1,12 +1,12 @@
 package com.gzsaps.java.controller;
 
 import com.gzsaps.java.entity.Information;
-import com.gzsaps.java.entity.Notice;
 import com.gzsaps.java.repository.InformationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/information")
@@ -14,9 +14,10 @@ public class InformationHandler {
   @Autowired
   private InformationRepository informationRepository;
 
-  @GetMapping("/findAll")
-  public List<Information> findAll() {
-    return informationRepository.findAll();
+  @GetMapping("/findAll/{page}/{size}")
+  public Page<Information> findAll(@PathVariable("page") Integer page, @PathVariable("size") Integer size) {
+    Pageable pageable = PageRequest.of(page-1,size);
+    return informationRepository.findAll(pageable);
   }
 
   @GetMapping("/find/{id}")

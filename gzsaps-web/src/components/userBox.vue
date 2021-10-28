@@ -1,6 +1,6 @@
 <template>
   <div id="userBox">
-    <span>欢迎你，{{ username }}！</span>
+    <span>欢迎你，{{$store.state.username}}！</span>
     <img src="../assets/image/avatar.png" alt="头像" />
   </div>
 </template>
@@ -9,7 +9,7 @@
 export default {
   data() {
     return {
-      username: "haha",
+      
     };
   },
 };
@@ -24,12 +24,12 @@ export default {
 }
 #userBox span {
   position: absolute;
-  top: 9vh;
+  top: 6vh;
   left: 75%;
 }
 #userBox img {
   position: absolute;
-  top: 6vh;
+  top: 3vh;
   left: 90%;
   width: 65px;
   height: 65px;

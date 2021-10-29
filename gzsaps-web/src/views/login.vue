@@ -1,21 +1,29 @@
 <template>
   <div id="login">
-    <div class="container switch">
+    <div class="container">
       <div class="form signup">
         <form action="" class="form">
           <h2 class="formTitle">注册</h2>
-          <input type="text" placeholder="用户名" />
-          <input type="text" placeholder="密码" />
-          <button @click="signIn">Sign In</button>
+          <input type="text" placeholder="用户名" v-model="signInForm.username"/>
+          <input type="text" placeholder="密码" v-model="signInForm.password"/>
+          <button @click.prevent="signIn">Sign In</button>
         </form>
       </div>
 
       <div class="form signin">
         <form action="" class="form">
           <h2 class="formTitle">登录</h2>
-          <input type="text" placeholder="用户名" />
-          <input type="text" placeholder="密码" />
-          <button @click="signUp">Sign Up</button>
+          <input
+            type="text"
+            placeholder="用户名"
+            v-model="signUpForm.username"
+          />
+          <input
+            type="password"
+            placeholder="密码"
+            v-model="signUpForm.password"
+          />
+          <button @click.prevent="signUp">Sign Up</button>
         </form>
       </div>
 
@@ -35,27 +43,79 @@
 
 <script>
 export default {
-  data(){
-    return{
-
-    }
+  data() {
+    return {
+      signUpForm: {
+        username: "",
+        password: "",
+      },
+      signInForm: {
+        username: "",
+        password: "",
+      },
+    };
   },
-  methods:{
+  methods: {
     toSignIn() {
-      const container = document.querySelector('.container');
-      container.classList.remove('switch');
+      const container = document.querySelector(".container");
+      container.classList.remove("switch");
     },
     toSignUp() {
-      const container = document.querySelector('.container');
-      container.classList.add('switch')
+      const container = document.querySelector(".container");
+      container.classList.add("switch");
     },
     signIn() {
-
+      let that = this;
+      let obj = {};
+      obj.username = this.signInForm.username;
+      obj.password = this.signInForm.password;
+      obj.realname = "";
+      obj.tel = "";
+      obj.address = "";
+      obj.role = 0;
+      this.$ajax
+        .post("http://localhost:8081/user/signIn", obj)
+        .then(function (res) {
+          if (res.data == "success") {
+            that.$message.success("注册成功，请登录");
+          } else {
+            that.$message.error("该用户名已被注册");
+          }
+        });
     },
     signUp() {
-      this.$router.replace('/user')
-    }
-  }
+      let that = this;
+      if (this.signUpForm.username == "" && this.signUpForm.password == "") {
+        this.$message("请输入用户名和密码");
+      } else if (this.signUpForm.username == "") {
+        this.$message("请输入用户名");
+      } else if (this.signUpForm.password == "") {
+        this.$message("请输入密码");
+      }
+      this.$ajax
+        .get(
+          "http://localhost:8081/user/signUp/" +
+            this.signUpForm.username +
+            "/" +
+            this.signUpForm.password
+        )
+        .then(function (res) {
+          if (res.data) {
+            let obj = {};
+            Object.assign(obj,res.data);
+            that.$store.commit("setUser",obj);
+            that.$router.replace("/user");
+            that.$message({
+              message: "登录成功",
+              type: "success",
+            });
+          } else {
+            that.$message.error("用户名或密码错误");
+          }
+        })
+        .catch((err) => console.log(err));
+    },
+  },
 };
 </script>
 
@@ -83,7 +143,6 @@ export default {
   top: 0;
   height: 100%;
   transition: all 0.5s ease-in-out;
-
 }
 .signup {
   left: 0;
@@ -123,7 +182,7 @@ export default {
   left: -100%;
   width: 200%;
   height: 100%;
-  background: url("../assets/image/background.png")no-repeat fixed center;
+  background: url("../assets/image/background.png") no-repeat fixed center;
   background-size: cover;
   transition: all 0.5s ease-in-out;
 }
@@ -141,7 +200,6 @@ export default {
   height: 100%;
   width: 50%;
   transition: all 0.5s ease-in-out;
-
 }
 .left {
   transform: translateX(-20%);
@@ -174,12 +232,12 @@ export default {
   margin-bottom: 1rem;
   font-size: 2rem;
 }
-#login button{
+#login button {
   outline: none;
   border: none;
   padding: 1rem 3rem;
   margin-top: 1.5rem;
-  background-image: -webkit-linear-gradient(40deg,#ff7f41 0%,#fbd04f 70%);
+  background-image: -webkit-linear-gradient(40deg, #ff7f41 0%, #fbd04f 70%);
   border-radius: 1rem;
   color: #fcfaf1;
   font-size: 1rem;

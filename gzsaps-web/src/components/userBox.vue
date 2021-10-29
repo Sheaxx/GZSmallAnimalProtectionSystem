@@ -1,6 +1,6 @@
 <template>
   <div id="userBox">
-    <span>欢迎你，{{$store.state.username}}！</span>
+    <span>欢迎你，{{$store.state.user.username}}！</span>
     <img src="../assets/image/avatar.png" alt="头像" />
   </div>
 </template>

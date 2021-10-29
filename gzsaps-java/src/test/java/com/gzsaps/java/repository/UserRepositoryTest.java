@@ -14,6 +14,6 @@ class UserRepositoryTest {
 
   @Test
   void findAll(){
-    System.out.println(userRepository.findAll());
+    System.out.println(userRepository.findById("aaa"));
   }
 }

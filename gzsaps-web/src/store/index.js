@@ -5,15 +5,26 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    username:"aaa",
-    role:2
-  },
-  getters:{
-    getUsername(){
-      return state.username;
+    user: {
+      username: "",
+      password: "",
+      realname: "",
+      tel: "",
+      address: "",
+      role: null
     }
   },
-  mutations: {},
+  getters: {},
+  mutations: {
+    setUser(state, user) {
+      state.user.username = user.username;
+      state.user.password = user.password;
+      state.user.realname = user.realname;
+      state.user.tel = user.tel;
+      state.user.address = user.address;
+      state.user.role = user.role;
+    }
+  },
   actions: {},
   modules: {}
 })

@@ -6,8 +6,8 @@
     >
     <el-button type="warning" @click="toList" v-else>返回列表</el-button>
     <div class="search" v-show="showList">
-      <el-input placeholder="请输入领养信息编号"></el-input>
-      <el-button type="warning" icon="el-icon-search">搜索</el-button>
+      <el-input placeholder="请输入领养信息编号" v-model="searchid"></el-input>
+      <el-button type="warning" icon="el-icon-search" @click="search">搜索</el-button>
     </div>
     <ul id="adoptionList" v-show="showList">
       <li
@@ -89,6 +89,7 @@ export default {
       isAdd: false,
       currentIndex: 0,
       total: 0,
+      searchid: null,
       adoptions: [],
       adoptionForm: {
         adoptionid: "",
@@ -150,7 +151,7 @@ export default {
       let obj = {};
       obj.title = this.adoptionForm.title;
       obj.content = this.adoptionForm.content;
-      obj.author = this.$store.state.username;
+      obj.author = this.$store.state.user.username;
       if (this.isAdd) {
         //新增领养信息
         obj.status = 0;
@@ -218,6 +219,20 @@ export default {
     //详情返回列表
     toList() {
       this.showList = true;
+    },
+    //搜索
+    search() {
+      let that = this;
+      this.$ajax
+        .get("http://localhost:8081/adoption/find/" + this.searchid)
+        .then(function (res) {
+          if (res.data) {
+            Object.assign(that.adoptionForm, res.data);
+            that.showList = false;
+          } else {
+            that.$message("该领养信息不存在");
+          }
+        }).catch((err) => console.log(err));
     },
     //分页改变
     page(currentPage) {

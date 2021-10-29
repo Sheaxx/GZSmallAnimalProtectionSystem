@@ -22,6 +22,11 @@ public class AdoptionHandler {
     return adoptionRepository.findAll(pageable);
   }
 
+  @GetMapping("/find/{id}")
+  public Adoption find(@PathVariable("id") Integer id) {
+    return adoptionRepository.findById(id).get();
+  }
+
   @PostMapping("/save")
   public String save(@RequestBody Adoption adoption) {
     adoption.setCreatetime(new Date());

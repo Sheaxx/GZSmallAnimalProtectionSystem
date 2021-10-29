@@ -6,8 +6,13 @@
     >
     <el-button type="warning" @click="toList" v-else>返回列表</el-button>
     <div class="search" v-show="showList">
-      <el-input placeholder="请输入志愿者项目编号"></el-input>
-      <el-button type="warning" icon="el-icon-search">搜索</el-button>
+      <el-input
+        placeholder="请输入志愿者项目编号"
+        v-model="searchid"
+      ></el-input>
+      <el-button type="warning" icon="el-icon-search" @click="search"
+        >搜索</el-button
+      >
     </div>
     <el-timeline v-show="showList">
       <el-timeline-item
@@ -113,6 +118,7 @@ export default {
       isAdd: false,
       currentIndex: 0,
       total: 0,
+      searchid: null,
       time: [],
       projects: [],
       projectForm: {
@@ -165,7 +171,7 @@ export default {
       obj.endtime = this.time[1];
       obj.principal = this.projectForm.principal;
       obj.principaltel = this.projectForm.principaltel;
-      obj.author = this.$store.state.username;
+      obj.author = this.$store.state.user.username;
       if (this.isAdd) {
         //新增项目
         if (this.$store.state.role == 1) {
@@ -250,6 +256,21 @@ export default {
     //详情返回列表
     toList() {
       this.showList = true;
+    },
+    //搜索
+    search() {
+      let that = this;
+      this.$ajax
+        .get("http://localhost:8081/project/find/" + this.searchid)
+        .then(function (res) {
+          if (res.data) {
+            Object.assign(that.projectForm, res.data);
+            that.showList = false;
+          } else {
+            that.$message("该志愿者项目不存在");
+          }
+        })
+        .catch((err) => console.log(err));
     },
     //分页改变
     page(currentPage) {

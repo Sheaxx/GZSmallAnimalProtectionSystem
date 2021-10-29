@@ -9,7 +9,13 @@
         v-if="readOnly"
       >
         <template slot="extra">
-          <el-button type="warning" size="small" icon="el-icon-edit" @click="openEdit">编辑个人信息</el-button>
+          <el-button
+            type="warning"
+            size="small"
+            icon="el-icon-edit"
+            @click="openEdit"
+            >编辑个人信息</el-button
+          >
         </template>
         <el-descriptions-item>
           <template slot="label">
@@ -109,38 +115,41 @@ export default {
     return {
       readOnly: true,
       user: {
-        username: "kooriookami",
-        realname: "李白",
+        username: "",
+        realname: "",
         password: "",
-        address: "江苏省苏州市吴中区吴中大道 1188 号",
-        tel: "18100000000",
-        role: "志愿者",
+        address: "",
+        tel: "",
+        role: "",
       },
-      adoptions: [
-        {
-          content: "活动按期开始",
-          timestamp: "2018-04-15",
-        },
-        {
-          content: "通过审核",
-          timestamp: "2018-04-13",
-        },
-      ],
-      projects: [
-        {
-          content: "活动按期开始",
-          timestamp: "2018-04-15",
-        },
-        {
-          content: "通过审核",
-          timestamp: "2018-04-13",
-        },
-      ],
+      adoptions: [],
+      projects: [],
     };
   },
   methods: {
     //修改个人信息
     editUser() {
+      let that = this;
+      let obj = {};
+      Object.assign(obj, this.user);
+      if(obj.role == "普通用户") {
+        obj.role = 0;
+      } else if (obj.role == "志愿者") {
+        obj.role = 1;
+      } else {
+        obj.role = 2;
+      }
+      this.$ajax
+        .put("http://localhost:8081/user/update", obj)
+        .then(function (res) {
+          if (res.data == "success") {
+            that.$store.commit("setUser", obj);
+            that.$message({
+              message: "修改成功",
+              type: "success",
+            });
+          }
+        }).catch((err) => console.log(err));
       this.readOnly = true;
     },
     //打开修改
@@ -151,6 +160,30 @@ export default {
     cancelEdit() {
       this.readOnly = true;
     },
+  },
+  created() {
+    console.log(this.$store.state.user);
+    let that = this;
+    Object.assign(this.user, this.$store.state.user);
+    if (this.user.role == 0) {
+      this.user.role = "普通用户";
+    } else if (this.user.role == 1) {
+      this.user.role = "志愿者";
+    } else {
+      this.user.role = "管理员";
+    }
+    this.$ajax
+      .get("http://localhost:8081/adoption/findAll/1/8")
+      .then((res) => {
+        that.adoptions = res.data.content.slice(0, 5);
+      })
+      .catch((error) => console.log(error));
+    this.$ajax
+      .get("http://localhost:8081/project/findAll/1/8")
+      .then((res) => {
+        that.projects = res.data.content;
+      })
+      .catch((error) => console.log(error));
   },
 };
 </script>
@@ -172,6 +205,8 @@ export default {
   border-radius: 25px;
   box-shadow: 0px 0px 10px 5px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  min-height: 30%;
+  max-height: 50%;
 }
 #user .title {
   font-size: 16px;
@@ -209,7 +244,7 @@ export default {
 }
 #user .el-button {
   float: right;
-  margin-left: 20px!important;
+  margin-left: 20px !important;
 }
 #user .el-input__inner:focus {
   border-color: #ff7f41;

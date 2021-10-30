@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/notice")
@@ -25,7 +26,12 @@ public class NoticeHandler {
 
   @GetMapping("/find/{id}")
   public Notice find(@PathVariable("id") Integer id) {
-    return noticeRepository.findById(id).get();
+    Optional<Notice> result = noticeRepository.findById(id);
+    if(result.isPresent()) {
+      return result.get();
+    } else {
+      return null;
+    }
   }
 
   @PostMapping("/save")
@@ -42,7 +48,6 @@ public class NoticeHandler {
 
   @PutMapping("/update")
   public String update(@RequestBody Notice notice){
-    notice.setLastmodifiedtime(new Date());
     Notice result = noticeRepository.save(notice);
     if(result != null) {
       return "success";

@@ -6,23 +6,23 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   state: {
     user: {
-      username: "",
+      username: "aaa",
       password: "",
       realname: "",
       tel: "",
       address: "",
-      role: null
+      role: 2
     }
   },
   getters: {},
   mutations: {
     setUser(state, user) {
-      state.user.username = user.username;
-      state.user.password = user.password;
-      state.user.realname = user.realname;
-      state.user.tel = user.tel;
-      state.user.address = user.address;
-      state.user.role = user.role;
+      Object.assign(state.user,user);
+    },
+    exit(state) {
+      for(let item in state.user) {
+        state.user[item] = ""
+      }
     }
   },
   actions: {},

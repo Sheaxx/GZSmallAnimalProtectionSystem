@@ -1,13 +1,21 @@
 <template>
   <div id="adoption">
     <h4 class="boxTitle"><i class="el-icon-s-claim"></i>领养</h4>
-    <el-button type="warning" @click="openAddMessage" v-if="showList"
+    <el-button
+      type="warning"
+      @click="openAddMessage"
+      v-if="showList"
+      class="topButton"
       >添加领养信息</el-button
     >
-    <el-button type="warning" @click="toList" v-else>返回列表</el-button>
+    <el-button type="warning" @click="toList" v-else class="topButton"
+      >返回列表</el-button
+    >
     <div class="search" v-show="showList">
       <el-input placeholder="请输入领养信息编号" v-model="searchid"></el-input>
-      <el-button type="warning" icon="el-icon-search" @click="search">搜索</el-button>
+      <el-button type="warning" icon="el-icon-search" @click="search"
+        >搜索</el-button
+      >
     </div>
     <ul id="adoptionList" v-show="showList">
       <li
@@ -40,7 +48,6 @@
               v-model="adoptionForm.content"
               rows="10"
               resize="none"
-              maxlength="500"
               show-word-limit
             ></el-input>
           </el-form-item>
@@ -71,14 +78,77 @@
       </div>
     </div>
 
+    <div class="coverBox" v-show="showDelete">
+      <div class="deleteBox">
+        <div class="deleteContent">
+          <i class="el-icon-warning-outline"></i>
+          <span>确定删除该条领养信息吗？</span>
+        </div>
+        <div class="deleteButton">
+          <el-button type="warning" plain @click="cancelDelete">取消</el-button>
+          <el-button type="warning" @click="deleteadoption">确定</el-button>
+        </div>
+      </div>
+    </div>
+
     <div class="details" v-show="!showList">
       <h4>{{ adoptionForm.title }}</h4>
       <p>{{ adoptionForm.content }}</p>
+      <p class="detailsAdopter" v-if="adoptionForm.status == 1">领养人用户名：{{ adoptionForm.adopter }}</p>
+      <p class="detailsAdopttime" v-if="adoptionForm.status == 1">领养时间：{{ adoptionForm.adopttime }}</p>
+      <div class="detailsButton">
+        <el-button
+          type="warning"
+          @click="showAdopt = true"
+          v-if="adoptionForm.author != $store.state.user.username"
+          :disabled="adoptionForm.status == 1"
+          >领养小动物</el-button
+        >
+        <el-button
+          type="warning"
+          plain
+          @click="openUpdateMessage"
+          v-if="
+            adoptionForm.author == $store.state.user.username ||
+            $store.state.user.role == 2
+          "
+          :disabled="adoptionForm.status == 1"
+          >修改</el-button
+        >
+        <el-button
+          type="warning"
+          plain
+          @click="openDeleteMessage"
+          v-if="
+            adoptionForm.author == $store.state.user.username ||
+            $store.state.user.role == 2
+          "
+          :disabled="adoptionForm.status == 1"
+          >删除</el-button
+        >
+      </div>
+    </div>
+
+    <div class="coverBox" v-show="showAdopt">
+      <div class="adoptBox">
+        <div class="adoptContent">
+          <i class="el-icon-warning-outline"></i>
+          <span>请对小动物负责，确定领养小动物吗？</span>
+        </div>
+        <div class="cutoffButton">
+          <el-button type="warning" plain @click="showAdopt = false"
+            >取消</el-button
+          >
+          <el-button type="warning" @click="adopt">确定</el-button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+import getNowTime from "../utils/date";
+
 export default {
   data() {
     return {
@@ -86,6 +156,7 @@ export default {
       showMessage: false,
       showDelete: false,
       notShowUpload: false,
+      showAdopt: false,
       isAdd: false,
       currentIndex: 0,
       total: 0,
@@ -129,15 +200,13 @@ export default {
       this.showMessage = true;
     },
     //打开修改领养信息界面
-    openUpdateMessage(index) {
+    openUpdateMessage() {
       Object.assign(this.adoptionForm, this.adoptions[index]);
       this.isAdd = false;
-      this.currentIndex = index;
       this.showMessage = true;
     },
     //打开删除领养信息提示
-    openDeleteMessage(index) {
-      this.currentIndex = index;
+    openDeleteMessage() {
       this.showDelete = true;
     },
     //取消添加或修改
@@ -149,8 +218,7 @@ export default {
     onSubmit() {
       let that = this;
       let obj = {};
-      obj.title = this.adoptionForm.title;
-      obj.content = this.adoptionForm.content;
+      Object.assign(obj, this.adoptionForm);
       obj.author = this.$store.state.user.username;
       if (this.isAdd) {
         //新增领养信息
@@ -170,9 +238,7 @@ export default {
           .catch((err) => console.log(err));
       } else {
         //修改领养信息
-        obj.adoptionid = this.adoptions[this.currentIndex].adoptionid;
-        obj.createtime = this.adoptions[this.currentIndex].createtime;
-        obj.status = this.adoptions[this.currentIndex].status;
+        obj.lastmodifiedtime = getNowTime();
         this.$ajax
           .put("http://localhost:8081/adoption/update", obj)
           .then(function (res) {
@@ -213,6 +279,7 @@ export default {
     },
     //查看详情
     toDetails(index) {
+      this.currentIndex = index;
       this.showList = false;
       Object.assign(this.adoptionForm, this.adoptions[index]);
     },
@@ -232,7 +299,25 @@ export default {
           } else {
             that.$message("该领养信息不存在");
           }
-        }).catch((err) => console.log(err));
+        })
+        .catch((err) => console.log(err));
+    },
+    //确认领养
+    adopt() {
+      let that = this;
+      this.$ajax
+        .put(
+          "http://localhost:8081/adoption/adopted/" +
+            this.adoptionForm.adoptionid
+        )
+        .then(function (res) {
+          if (res.data == "success") {
+            that.$message.success("领养成功");
+          } else {
+            that.$message.error("领养失败");
+          }
+        })
+        .catch((err) => console.log(err));
     },
     //分页改变
     page(currentPage) {
@@ -276,7 +361,7 @@ export default {
   overflow: hidden;
   width: 90%;
 }
-#adoption .el-button {
+.topButton {
   float: right;
   margin-top: -5%;
   margin-right: 2%;
@@ -298,7 +383,7 @@ export default {
   width: 90%;
   height: 73%;
   margin: 0 auto;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 #adoptionList li {
   width: 21%;
@@ -350,14 +435,12 @@ export default {
   transform: translate(-50%, -50%);
   padding: 3% 3% 0 3%;
 }
-.coverBox .el-textarea__inner {
-  font-size: 16px !important;
+.coverBox .el-textarea__inner,
+.coverBox .el-input__inner {
+  font-size: 13px !important;
 }
 .coverBox .el-form-item:last-child {
-  margin-top: 8%;
-}
-.coverBox .el-textarea__inner {
-  font-size: 14px !important;
+  margin-left: 70%;
 }
 #adoption textarea {
   font-family: Arial, Helvetica, sans-serif;
@@ -378,6 +461,32 @@ export default {
 .el-upload--picture-card {
   background: #fffffd !important;
 }
+.deleteBox,
+.adoptBox {
+  position: absolute;
+  width: 28%;
+  height: 15%;
+  background: #fff;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 3% 3% 0 3%;
+}
+.deleteContent,
+.adoptContent {
+  font-size: 18px;
+  width: 100%;
+}
+.deleteContent i,
+.adoptContent i {
+  font-size: 25px;
+}
+.deleteButton,
+.adoptButton {
+  position: relative;
+  top: 30%;
+  left: 70%;
+}
 h5 {
   cursor: pointer;
 }
@@ -389,5 +498,12 @@ h5 {
   text-align: center;
   font-size: 20px;
   margin: 10px 0;
+}
+.detailsButton {
+  clear: both;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

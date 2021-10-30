@@ -8,6 +8,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/information")
 public class InformationHandler {
@@ -22,7 +24,12 @@ public class InformationHandler {
 
   @GetMapping("/find/{id}")
   public Information find(@PathVariable("id") Integer id) {
-    return informationRepository.findById(id).get();
+    Optional<Information> result = informationRepository.findById(id);
+    if (result.isPresent()) {
+      return result.get();
+    } else {
+      return null;
+    }
   }
 
   @PostMapping("/save")

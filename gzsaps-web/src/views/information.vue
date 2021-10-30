@@ -1,13 +1,25 @@
 <template>
   <div id="information">
     <h4 class="boxTitle"><i class="el-icon-s-management"></i>小动物科普</h4>
-    <el-button type="warning" @click="openAddMessage" v-if="showList"
+    <el-button
+      type="warning"
+      @click="openAddMessage"
+      v-show="showList && $store.state.user.role == 2"
+      class="topButton"
       >添加科普信息</el-button
     >
-    <el-button type="warning" @click="toList" v-else>返回列表</el-button>
+    <el-button
+      type="warning"
+      @click="toList"
+      v-show="!showList"
+      class="topButton"
+      >返回列表</el-button
+    >
     <div class="search" v-show="showList">
       <el-input placeholder="请输入科普信息编号" v-model="searchid"></el-input>
-      <el-button type="warning" icon="el-icon-search" @click="search">搜索</el-button>
+      <el-button type="warning" icon="el-icon-search" @click="search"
+        >搜索</el-button
+      >
     </div>
     <ul id="informationList" v-show="showList">
       <li
@@ -44,7 +56,6 @@
               v-model="informationForm.content"
               rows="10"
               resize="none"
-              maxlength="500"
               show-word-limit
             ></el-input>
           </el-form-item>
@@ -75,9 +86,38 @@
       </div>
     </div>
 
+    <div class="coverBox" v-show="showDelete">
+      <div class="deleteBox">
+        <div class="deleteContent">
+          <i class="el-icon-warning-outline"></i>
+          <span>确定删除该科普信息吗？</span>
+        </div>
+        <div class="deleteButton">
+          <el-button type="warning" plain @click="cancelDelete">取消</el-button>
+          <el-button type="warning" @click="deleteinformation">确定</el-button>
+        </div>
+      </div>
+    </div>
+
     <div class="details" v-show="!showList">
       <h4>{{ informationForm.title }}</h4>
       <p>{{ informationForm.content }}</p>
+      <div class="detailsButton">
+        <el-button
+          type="warning"
+          plain
+          @click="openUpdateMessage"
+          v-if="$store.state.user.role == 2"
+          >修改</el-button
+        >
+        <el-button
+          type="warning"
+          plain
+          @click="openDeleteMessage"
+          v-if="$store.state.user.role == 2"
+          >删除</el-button
+        >
+      </div>
     </div>
   </div>
 </template>
@@ -149,7 +189,8 @@ export default {
       let obj = {};
       obj.title = this.informationForm.title;
       obj.content = this.informationForm.content;
-      if (that.isAdd) {//新增科普信息
+      if (that.isAdd) {
+        //新增科普信息
         this.$ajax
           .post("http://localhost:8081/information/save", obj)
           .then(function (res) {
@@ -164,7 +205,8 @@ export default {
             }
           })
           .catch((err) => console.log(err));
-      } else { //修改科普信息
+      } else {
+        //修改科普信息
         obj.informationid = this.informations[this.currentIndex].informationid;
         this.$ajax
           .put("http://localhost:8081/information/update", obj)
@@ -225,7 +267,8 @@ export default {
           } else {
             that.$message("该科普信息不存在");
           }
-        }).catch((err) => console.log(err));
+        })
+        .catch((err) => console.log(err));
     },
     //分页改变
     page(currentPage) {
@@ -269,7 +312,7 @@ export default {
   overflow: hidden;
   width: 90%;
 }
-#information .el-button {
+.topButton {
   float: right;
   margin-top: -5%;
   margin-right: 2%;
@@ -291,7 +334,7 @@ export default {
   width: 90%;
   height: 73%;
   margin: 0 auto;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 #informationList li {
   width: 21%;
@@ -343,14 +386,12 @@ export default {
   transform: translate(-50%, -50%);
   padding: 3% 3% 0 3%;
 }
-.coverBox .el-textarea__inner {
-  font-size: 16px !important;
+.coverBox .el-textarea__inner,
+.coverBox .el-input__inner {
+  font-size: 13px !important;
 }
 .coverBox .el-form-item:last-child {
-  margin-top: 8%;
-}
-.coverBox .el-textarea__inner {
-  font-size: 14px !important;
+  margin-left: 70%;
 }
 #information textarea {
   font-family: Arial, Helvetica, sans-serif;
@@ -382,5 +423,12 @@ h5 {
   text-align: center;
   font-size: 20px;
   margin: 10px 0;
+}
+.detailsButton {
+  clear: both;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

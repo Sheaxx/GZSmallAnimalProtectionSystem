@@ -1,10 +1,16 @@
 <template>
   <div id="notice">
     <h4 class="boxTitle"><i class="el-icon-message-solid"></i>公告</h4>
-    <el-button type="warning" @click="openAddMessage" v-if="showList"
+    <el-button
+      type="warning"
+      @click="openAddMessage"
+      v-show="showList && $store.state.user.role == 2"
+      class="topButton"
       >添加公告</el-button
     >
-    <el-button type="warning" @click="toList" v-else>返回列表</el-button>
+    <el-button type="warning" @click="toList" v-show="!showList" class="topButton"
+      >返回列表</el-button
+    >
     <div class="search" v-show="showList">
       <el-input placeholder="请输入公告编号" v-model="searchid"></el-input>
       <el-button type="warning" icon="el-icon-search" @click="search"
@@ -23,10 +29,6 @@
           <h5 @click="toDetails(index)">
             NO.{{ item.noticeid }}：{{ item.title }}
           </h5>
-          <div class="option">
-            <a href="" @click.prevent="openUpdateMessage(index)">修改</a>
-            <a href="" @click.prevent="openDeleteMessage(index)">删除</a>
-          </div>
         </el-card>
       </el-timeline-item>
     </el-timeline>
@@ -49,7 +51,7 @@
             <el-input
               type="textarea"
               v-model="noticeForm.content"
-              rows="10"
+              rows="19"
               resize="none"
               show-word-limit
             ></el-input>
@@ -80,11 +82,35 @@
     <div class="details" v-show="!showList">
       <h4>{{ noticeForm.title }}</h4>
       <p>{{ noticeForm.content }}</p>
+      <div class="itemTimes">
+        <p class="detailsCreateTime">发布时间：{{ noticeForm.createtime }}</p>
+        <p class="detailsLastTime">
+          最后修改时间：{{ noticeForm.lastmodifiedtime }}
+        </p>
+      </div>
+      <div class="detailsButton">
+        <el-button
+          type="warning"
+          plain
+          @click="openUpdateMessage"
+          v-if="$store.state.user.role == 2"
+          >修改</el-button
+        >
+        <el-button
+          type="warning"
+          plain
+          @click="openDeleteMessage"
+          v-if="$store.state.user.role == 2"
+          >删除</el-button
+        >
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+import getNowTime from "../utils/date";
+
 export default {
   data() {
     return {
@@ -100,6 +126,8 @@ export default {
         noticeid: 0,
         title: "",
         content: "",
+        createtime: "",
+        lastmodifiedtime: "",
       },
     };
   },
@@ -113,15 +141,13 @@ export default {
       this.showMessage = true;
     },
     //打开修改公告界面
-    openUpdateMessage(index) {
+    openUpdateMessage() {
       Object.assign(this.noticeForm, this.notices[index]);
       this.isAdd = false;
-      this.currentIndex = index;
       this.showMessage = true;
     },
     //打开删除公告提示
-    openDeleteMessage(index) {
-      this.currentIndex = index;
+    openDeleteMessage() {
       this.showDelete = true;
     },
     //取消添加或修改
@@ -155,6 +181,7 @@ export default {
         //修改公告
         obj.noticeid = this.notices[this.currentIndex].noticeid;
         obj.createtime = this.notices[this.currentIndex].createtime;
+        obj.lastmodifiedtime = getNowTime();
         this.$ajax
           .put("http://localhost:8081/notice/update", obj)
           .then(function (res) {
@@ -190,11 +217,13 @@ export default {
             message: "删除成功",
             type: "success",
           });
+          that.toList();
         })
         .catch((err) => console.log(err));
     },
     //查看详情
     toDetails(index) {
+      this.currentIndex = index;
       this.showList = false;
       Object.assign(this.noticeForm, this.notices[index]);
     },
@@ -214,7 +243,8 @@ export default {
           } else {
             that.$message("该公告不存在");
           }
-        }).catch((err) => console.log(err));
+        })
+        .catch((err) => console.log(err));
     },
     //分页改变
     page(currentPage) {
@@ -258,7 +288,7 @@ export default {
   overflow: hidden;
   width: 90%;
 }
-#notice .el-button {
+.topButton {
   float: right;
   margin-top: -5%;
   margin-right: 2%;
@@ -300,7 +330,7 @@ export default {
 #notice .el-timeline {
   width: 100%;
   height: 75%;
-  overflow-y: scroll;
+  overflow: auto;
 }
 #notice .el-timeline-item {
   width: 95%;
@@ -317,23 +347,20 @@ export default {
 }
 .messageBox {
   position: absolute;
-  width: 40%;
-  min-height: 40%;
-  max-height: 80%;
+  width: 70%;
+  height: 70%;
   background: #fff;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 3% 3% 0 3%;
 }
-.coverBox .el-textarea__inner {
-  font-size: 16px !important;
+.coverBox .el-textarea__inner,
+.coverBox .el-input__inner {
+  font-size: 13px !important;
 }
 .coverBox .el-form-item:last-child {
-  margin-top: 8%;
-}
-.coverBox .el-textarea__inner {
-  font-size: 14px !important;
+  margin-left: 80%;
 }
 .coverBox textarea {
   font-family: Arial, Helvetica, sans-serif;
@@ -363,19 +390,43 @@ export default {
 }
 .deleteBuntton {
   position: relative;
-  top: 45%;
-  left: 5%;
+  top: 30%;
+  left: 70%;
 }
 h5 {
   cursor: pointer;
 }
 .details {
-  white-space: pre-wrap;
-  line-height: 20px;
+  overflow: auto;
+  height: 91%;
+  zoom: 1;
 }
 .details h4 {
   text-align: center;
-  font-size: 22px;
-  margin: 15px 0 24px 0;
+  font-size: 20px;
+  margin: 15px 0;
+}
+.details p {
+  margin: 20px 0;
+  clear: both;
+  white-space: pre-wrap;
+  line-height: 20px;
+}
+.itemTimes {
+  clear: both;
+  float: right;
+  margin-bottom: 10px;
+}
+.itemTimes p {
+  font-size: 12px;
+  margin: 5px;
+  color: rgba(0, 0, 0, 0.8);
+}
+.detailsButton {
+  clear: both;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

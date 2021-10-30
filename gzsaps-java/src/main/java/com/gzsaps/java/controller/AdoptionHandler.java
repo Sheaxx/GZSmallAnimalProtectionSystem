@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/adoption")
@@ -24,7 +25,12 @@ public class AdoptionHandler {
 
   @GetMapping("/find/{id}")
   public Adoption find(@PathVariable("id") Integer id) {
-    return adoptionRepository.findById(id).get();
+    Optional<Adoption> result = adoptionRepository.findById(id);
+    if(result.isPresent()) {
+      return result.get();
+    } else {
+      return null;
+    }
   }
 
   @PostMapping("/save")
@@ -41,7 +47,6 @@ public class AdoptionHandler {
 
   @PutMapping("/update")
   public String update(@RequestBody Adoption adoption){
-    adoption.setLastmodifiedtime(new Date());
     Adoption result = adoptionRepository.save(adoption);
     if(result != null) {
       return "success";
@@ -55,4 +60,15 @@ public class AdoptionHandler {
     adoptionRepository.deleteById(id);
   }
 
+  @PutMapping("/adopted/{id}")
+  public String adopted(@PathVariable("id") Integer id) {
+    Adoption adoption = adoptionRepository.findById(id).get();
+    adoption.setStatus(1);
+    Adoption result = adoptionRepository.save(adoption);
+    if(result != null) {
+      return "success";
+    } else {
+      return "error";
+    }
+  }
 }

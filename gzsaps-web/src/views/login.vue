@@ -4,8 +4,12 @@
       <div class="form signup">
         <form action="" class="form">
           <h2 class="formTitle">注册</h2>
-          <input type="text" placeholder="用户名" v-model="signInForm.username"/>
-          <input type="text" placeholder="密码" v-model="signInForm.password"/>
+          <input
+            type="text"
+            placeholder="用户名"
+            v-model="signInForm.username"
+          />
+          <input type="text" placeholder="密码" v-model="signInForm.password" />
           <button @click.prevent="signIn">Sign In</button>
         </form>
       </div>
@@ -65,55 +69,64 @@ export default {
       container.classList.add("switch");
     },
     signIn() {
-      let that = this;
-      let obj = {};
-      obj.username = this.signInForm.username;
-      obj.password = this.signInForm.password;
-      obj.realname = "";
-      obj.tel = "";
-      obj.address = "";
-      obj.role = 0;
-      this.$ajax
-        .post("http://localhost:8081/user/signIn", obj)
-        .then(function (res) {
-          if (res.data == "success") {
-            that.$message.success("注册成功，请登录");
-          } else {
-            that.$message.error("该用户名已被注册");
-          }
-        });
+      if (this.signInForm.username == "" && this.signInForm.password == "") {
+        this.$message("请输入用户名和密码");
+      } else if (this.signInForm.username == "") {
+        this.$message("请输入用户名");
+      } else if (this.signInForm.password == "") {
+        this.$message("请输入密码");
+      } else {
+        let that = this;
+        let obj = {};
+        obj.username = this.signInForm.username;
+        obj.password = this.signInForm.password;
+        obj.realname = "";
+        obj.tel = "";
+        obj.address = "";
+        obj.role = 0;
+        this.$ajax
+          .post("http://localhost:8081/user/signIn", obj)
+          .then(function (res) {
+            if (res.data == "success") {
+              that.$message.success("注册成功，请登录");
+            } else {
+              that.$message.error("该用户名已被注册");
+            }
+          });
+      }
     },
     signUp() {
-      let that = this;
       if (this.signUpForm.username == "" && this.signUpForm.password == "") {
         this.$message("请输入用户名和密码");
       } else if (this.signUpForm.username == "") {
         this.$message("请输入用户名");
       } else if (this.signUpForm.password == "") {
         this.$message("请输入密码");
+      } else {
+        let that = this;
+        this.$ajax
+          .get(
+            "http://localhost:8081/user/signUp/" +
+              this.signUpForm.username +
+              "/" +
+              this.signUpForm.password
+          )
+          .then(function (res) {
+            if (res.data) {
+              let obj = {};
+              Object.assign(obj, res.data);
+              that.$store.commit("setUser", obj);
+              that.$router.replace("/user");
+              that.$message({
+                message: "登录成功",
+                type: "success",
+              });
+            } else {
+              that.$message.error("用户名或密码错误");
+            }
+          })
+          .catch((err) => console.log(err));
       }
-      this.$ajax
-        .get(
-          "http://localhost:8081/user/signUp/" +
-            this.signUpForm.username +
-            "/" +
-            this.signUpForm.password
-        )
-        .then(function (res) {
-          if (res.data) {
-            let obj = {};
-            Object.assign(obj,res.data);
-            that.$store.commit("setUser",obj);
-            that.$router.replace("/user");
-            that.$message({
-              message: "登录成功",
-              type: "success",
-            });
-          } else {
-            that.$message.error("用户名或密码错误");
-          }
-        })
-        .catch((err) => console.log(err));
     },
   },
 };

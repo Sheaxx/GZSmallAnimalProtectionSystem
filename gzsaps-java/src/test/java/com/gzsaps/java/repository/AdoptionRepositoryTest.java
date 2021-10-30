@@ -1,5 +1,7 @@
 package com.gzsaps.java.repository;
 
+import com.gzsaps.java.controller.ProjectHandler;
+import com.gzsaps.java.entity.Project;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,9 +16,14 @@ class AdoptionRepositoryTest {
   private ProjectRepository projectRepository;
   @Autowired
   private NoticeRepository noticeRepository;
+  @Autowired
+  private ProjectHandler projectHandler;
 
   @Test
   void findAll() {
-    System.out.println(noticeRepository.findAll());
+    Project project = projectRepository.findById(1).get();
+    project.setApplicantlist("aaa");
+    projectRepository.save(project);
+    System.out.println(projectHandler.apply("abc", 1));
   }
 }

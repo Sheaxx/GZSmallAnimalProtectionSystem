@@ -1,5 +1,6 @@
 package com.gzsaps.java.repository;
 
+import com.gzsaps.java.controller.CommentHandler;
 import com.gzsaps.java.controller.ProjectHandler;
 import com.gzsaps.java.entity.Project;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,8 @@ class AdoptionRepositoryTest {
   private NoticeRepository noticeRepository;
   @Autowired
   private ProjectHandler projectHandler;
+  @Autowired
+  private CommentHandler commentHandler;
 
   @Test
   void findAll() {
@@ -25,5 +28,10 @@ class AdoptionRepositoryTest {
     project.setApplicantlist("aaa");
     projectRepository.save(project);
     System.out.println(projectHandler.apply("abc", 1));
+  }
+
+  @Test
+  void commment() {
+    System.out.println(commentHandler.findAll(1));
   }
 }

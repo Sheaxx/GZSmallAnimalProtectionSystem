@@ -5,6 +5,9 @@ import com.gzsaps.java.repository.CommentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 @RestController
@@ -13,13 +16,21 @@ public class CommentHandler {
   @Autowired
   private CommentRepository commentRepository;
 
-  @GetMapping("/findAll")
-  public List<Comment> findAll() {
-    return commentRepository.findAll();
+  @GetMapping("/findAll/{id}")
+  public List<Comment> findAll(@PathVariable("id") Integer id) {
+    List<Comment> list = commentRepository.findAll();
+    List<Comment> result = new ArrayList<>();
+    for(int i=0;i<list.size();i++) {
+      if (list.get(i).getAdoptionid() == id) {
+        result.add(list.get(i));
+      }
+    }
+    return result;
   }
 
   @PostMapping("/save")
   public String save(@RequestBody Comment comment) {
+    comment.setCreatetime(new Date());
     Comment result = commentRepository.save(comment);
     if(result != null) {
       return "success";

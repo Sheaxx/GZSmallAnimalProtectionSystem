@@ -94,8 +94,12 @@
     <div class="details" v-show="!showList">
       <h4>{{ adoptionForm.title }}</h4>
       <p>{{ adoptionForm.content }}</p>
-      <p class="detailsAdopter" v-if="adoptionForm.status == 1">领养人用户名：{{ adoptionForm.adopter }}</p>
-      <p class="detailsAdopttime" v-if="adoptionForm.status == 1">领养时间：{{ adoptionForm.adopttime }}</p>
+      <p class="detailsAdopter" v-if="adoptionForm.status == 1">
+        领养人用户名：{{ adoptionForm.adopter }}
+      </p>
+      <p class="detailsAdopttime" v-if="adoptionForm.status == 1">
+        领养时间：{{ adoptionForm.adopttime }}
+      </p>
       <div class="detailsButton">
         <el-button
           type="warning"
@@ -127,6 +131,25 @@
           >删除</el-button
         >
       </div>
+      <el-divider><i class="el-icon-chat-line-round"></i></el-divider>
+      <el-timeline v-if="comments.length">
+        <el-timeline-item placement="top" v-for="(item,index) in comments" :key="index" :timestamp="item.createtime">
+          <el-card>
+            <p class="commentAuthor">{{ item.author }}</p>
+            <p class="commentContent">{{ item.content }}</p>
+          </el-card>
+        </el-timeline-item>
+      </el-timeline>
+      <el-input
+        type="textarea"
+        v-model="commentForm.content"
+        rows="5"
+        resize="none"
+        class="commentEdit"
+      ></el-input>
+      <div>
+        <el-button type="warning" plain class="addComment" @click="addComment">发布评论</el-button>
+      </div>
     </div>
 
     <div class="coverBox" v-show="showAdopt">
@@ -135,7 +158,7 @@
           <i class="el-icon-warning-outline"></i>
           <span>请对小动物负责，确定领养小动物吗？</span>
         </div>
-        <div class="cutoffButton">
+        <div class="adoptButton">
           <el-button type="warning" plain @click="showAdopt = false"
             >取消</el-button
           >
@@ -174,6 +197,14 @@ export default {
         adopttime: "",
       },
       imageList: [],
+      comments: [],
+      commentForm: {
+        commentid: null,
+        content: "",
+        author: "",
+        createtime: "",
+        adoptionid: null,
+      },
     };
   },
   methods: {
@@ -280,8 +311,15 @@ export default {
     //查看详情
     toDetails(index) {
       this.currentIndex = index;
-      this.showList = false;
       Object.assign(this.adoptionForm, this.adoptions[index]);
+      let that = this;
+      this.$ajax.get("http://localhost:8081/comment/findAll/" + this.adoptionForm.adoptionid).then(function(res){
+        that.comments = res.data;
+      })
+      for(let item in this.commentForm) {
+        this.commentForm[item] = null;
+      }
+      this.showList = false;
     },
     //详情返回列表
     toList() {
@@ -305,6 +343,12 @@ export default {
     //确认领养
     adopt() {
       let that = this;
+      for(let item in this.$store.state.user) {
+        if(this.$store.state.user[item] == null || this.$store.state.user[item] == "") {
+          this.$message("请先完善个人信息");
+          return ;
+        }
+      }
       this.$ajax
         .put(
           "http://localhost:8081/adoption/adopted/" +
@@ -318,6 +362,20 @@ export default {
           }
         })
         .catch((err) => console.log(err));
+    },
+    //发布评论
+    addComment() {
+      let that = this;
+      let obj = {};
+      Object.assign(obj,this.commentForm);
+      obj.adoptionid = this.adoptionForm.adoptionid;
+      obj.author = this.$store.state.user.username;
+      this.$ajax.post("http://localhost:8081/comment/save",obj).then(function(res){
+        if (res.data == "success") {
+          that.comments.push(obj);
+          that.$message.success("发布评论成功");
+        }
+      }).catch((err) => console.log(err));
     },
     //分页改变
     page(currentPage) {
@@ -493,11 +551,33 @@ h5 {
 .details {
   white-space: pre-wrap;
   line-height: 20px;
+  padding: 2%;
+  overflow: auto;
+  height: 83%;
+  zoom: 1;
 }
 .details h4 {
   text-align: center;
   font-size: 20px;
   margin: 10px 0;
+}
+.details h5 {
+  margin: 10px 5%;
+}
+.el-divider__text {
+  background: #FCFAF1;
+  font-size: 18px;
+}
+.el-divider {
+  margin: 50px 0;
+}
+.details .el-timeline {
+  padding: 0 5%;
+}
+.commentEdit {
+  width: 80%;
+  margin-top: 20px;
+  margin-left: 10%;
 }
 .detailsButton {
   clear: both;
@@ -505,5 +585,11 @@ h5 {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-bottom: 20px;
+}
+.addComment {
+  float:right;
+  margin-top: 10px;
+  margin-right: 10%;
 }
 </style>

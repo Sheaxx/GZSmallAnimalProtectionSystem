@@ -13,6 +13,6 @@ public class AdoptionImage {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Integer imageid;
-  private Integer data;
+  private String data;
   private Integer adoptionid;
 }

@@ -51,7 +51,7 @@
             <el-input
               type="textarea"
               v-model="noticeForm.content"
-              rows="19"
+              rows="17"
               resize="none"
               show-word-limit
             ></el-input>
@@ -72,7 +72,7 @@
           <i class="el-icon-warning-outline"></i>
           <span>确定删除该条公告吗？</span>
         </div>
-        <div class="deleteBuntton">
+        <div class="deleteButton">
           <el-button type="warning" plain @click="cancelDelete">取消</el-button>
           <el-button type="warning" @click="deleteNotice">确定</el-button>
         </div>
@@ -80,8 +80,8 @@
     </div>
 
     <div class="details" v-show="!showList">
-      <h4>{{ noticeForm.title }}</h4>
-      <p>{{ noticeForm.content }}</p>
+      <h4>{{ title }}</h4>
+      <p>{{ content }}</p>
       <div class="itemTimes">
         <p class="detailsCreateTime">发布时间：{{ noticeForm.createtime }}</p>
         <p class="detailsLastTime">
@@ -129,6 +129,8 @@ export default {
         createtime: "",
         lastmodifiedtime: "",
       },
+      title:"",
+      content:""
     };
   },
   methods: {
@@ -159,9 +161,8 @@ export default {
     onSubmit() {
       let that = this;
       let obj = {};
-      obj.title = this.noticeForm.title;
-      obj.content = this.noticeForm.content;
-      obj.author = this.$store.state.user.username;
+      Object.assign(obj,this.noticeForm);
+      obj.author = window.localStorage.getItem("username");
       if (this.isAdd) {
         //新增公告
         this.$ajax
@@ -179,14 +180,14 @@ export default {
           .catch((err) => console.log(err));
       } else {
         //修改公告
-        obj.noticeid = this.notices[this.currentIndex].noticeid;
-        obj.createtime = this.notices[this.currentIndex].createtime;
         obj.lastmodifiedtime = getNowTime();
         this.$ajax
           .put("http://localhost:8081/notice/update", obj)
           .then(function (res) {
             if (res.data == "success") {
               that.notices[that.currentIndex] = obj;
+              that.title = obj.title;
+              that.content = obj.content;
               that.showMessage = false;
               that.$message({
                 message: "修改成功",
@@ -224,8 +225,10 @@ export default {
     //查看详情
     toDetails(index) {
       this.currentIndex = index;
-      this.showList = false;
       Object.assign(this.noticeForm, this.notices[index]);
+      this.title = this.noticeForm.title;
+      this.content = this.noticeForm.content;
+      this.showList = false;
     },
     //详情返回列表
     toList() {
@@ -239,6 +242,8 @@ export default {
         .then(function (res) {
           if (res.data) {
             Object.assign(that.noticeForm, res.data);
+            that.title = that.noticeForm.title;
+            that.content = that.noticeForm.content;
             that.showList = false;
           } else {
             that.$message("该公告不存在");
@@ -388,7 +393,7 @@ export default {
 .deleteContent i {
   font-size: 25px;
 }
-.deleteBuntton {
+.deleteButton {
   position: relative;
   top: 30%;
   left: 70%;
@@ -398,8 +403,7 @@ h5 {
 }
 .details {
   overflow: auto;
-  height: 91%;
-  zoom: 1;
+  height: 83%;
 }
 .details h4 {
   text-align: center;

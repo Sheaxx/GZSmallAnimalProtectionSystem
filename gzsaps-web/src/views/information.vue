@@ -27,7 +27,7 @@
         :key="index"
         @click="toDetails(index)"
       >
-        <img :src="item.image" />
+        <img :src="informationImages[index].data" />
         <h5>{{ item.title }}</h5>
       </li>
     </ul>
@@ -54,7 +54,7 @@
             <el-input
               type="textarea"
               v-model="informationForm.content"
-              rows="10"
+              rows="8"
               resize="none"
               show-word-limit
             ></el-input>
@@ -67,10 +67,11 @@
               :on-change="handleChange"
               :show-file-list="true"
               :auto-upload="false"
-              :limit="8"
+              :limit="1"
               :class="{ hide: notShowUpload }"
             >
-              <i class="el-icon-plus"></i>
+              <img v-if="imgUrl" :src="imgUrl" />
+              <i v-else class="el-icon-plus"></i>
             </el-upload>
             <!-- <el-dialog :visible.sync="dialogVisible">
               <img width="100%" :src="dialogImageUrl" alt="" />
@@ -100,8 +101,11 @@
     </div>
 
     <div class="details" v-show="!showList">
-      <h4>{{ informationForm.title }}</h4>
-      <p>{{ informationForm.content }}</p>
+      <h4>{{ title }}</h4>
+      <div class="image">
+        <img v-if="informationImage.data" :src="imgUrl" alt="科普信息照片" />
+      </div>
+      <p>{{ content }}</p>
       <div class="detailsButton">
         <el-button
           type="warning"
@@ -140,7 +144,15 @@ export default {
         title: "",
         content: "",
       },
-      imageList: "",
+      informationImages: [],
+      informationImage: {
+        imageid: null,
+        data: "",
+        informationid: null,
+      },
+      title: "",
+      content: "",
+      imgUrl: "",
     };
   },
   methods: {
@@ -149,6 +161,7 @@ export default {
       if (fileList.length < 8) {
         this.notShowUpload = false;
       }
+      this.informationImage.data = "";
     },
     //照片上传按钮的动态显示
     handleChange(file, fileList) {
@@ -157,12 +170,22 @@ export default {
       } else {
         this.notShowUpload = false;
       }
+      let reader = new FileReader();
+      reader.readAsDataURL(file.raw);
+      let that = this;
+      reader.onload = function () {
+        that.informationImage.data = reader.result;
+      };
     },
     //打开添加科普信息界面
     openAddMessage() {
       for (let item in this.informationForm) {
         this.informationForm[item] = null;
       }
+      for (let item in this.informationImage) {
+        this.informationImage[item] = null;
+      }
+      this.imgUrl = null;
       this.isAdd = true;
       this.showMessage = true;
     },
@@ -187,21 +210,30 @@ export default {
     onSubmit() {
       let that = this;
       let obj = {};
-      obj.title = this.informationForm.title;
-      obj.content = this.informationForm.content;
+      Object.assign(obj, this.informationForm);
+      let img = {};
+      Object.assign(img, this.informationImage);
       if (that.isAdd) {
         //新增科普信息
         this.$ajax
           .post("http://localhost:8081/information/save", obj)
           .then(function (res) {
-            if (res.data == "success") {
-              that.informations.unshift(obj);
-              that.informations[that.currentIndex] = obj;
-              that.showMessage = false;
-              that.$message({
-                message: "发布成功",
-                type: "success",
-              });
+            if (res.data) {
+              obj.informationid = res.data;
+              that.informations.push(obj);
+              img.informationid = obj.informationid;
+              that.$ajax
+                .post("http://localhost:8081/informationImage/save", img)
+                .then(function (res) {
+                  if (res.data == "success") {
+                    that.$router.go(0);
+                    that.$message({
+                      message: "发布成功",
+                      type: "success",
+                    });
+                  }
+                })
+                .catch((err) => console.log(err));
             }
           })
           .catch((err) => console.log(err));
@@ -213,6 +245,9 @@ export default {
           .then(function (res) {
             if (res.data == "success") {
               that.informations[that.currentIndex] = obj;
+              that.title = obj.title;
+              that.content = obj.content;
+              that.imgUrl = img.data;
               that.showMessage = false;
               that.$message({
                 message: "修改成功",
@@ -234,11 +269,12 @@ export default {
       this.$ajax
         .delete(
           "http://localhost:8081/information/delete/" +
-            this.informations[this.currentIndex].informationid
+            this.informationForm.informationid
         )
         .then(function () {
           that.informations.splice(that.currentIndex, 1);
           that.showDelete = false;
+          that.showList = true;
           that.$message({
             message: "删除成功",
             type: "success",
@@ -248,8 +284,13 @@ export default {
     },
     //查看详情
     toDetails(index) {
-      this.showList = false;
+      this.currentIndex = index;
       Object.assign(this.informationForm, this.informations[index]);
+      Object.assign(this.informationImage, this.informationImages[index]);
+      this.title = this.informationForm.title;
+      this.content = this.informationForm.content;
+      this.imgUrl = this.informationImage.data;
+      this.showList = false;
     },
     //详情返回列表
     toList() {
@@ -263,7 +304,21 @@ export default {
         .then(function (res) {
           if (res.data) {
             Object.assign(that.informationForm, res.data);
-            that.showList = false;
+            that.$ajax
+              .get(
+                "http://localhost:8081/informationImage/find/" +
+                  that.informationForm.informationid
+              )
+              .then((res) => {
+                if (res.data) {
+                  Object.assign(that.informationImage, res.data);
+                  that.title = that.informationForm.title;
+                  that.content = that.informationForm.content;
+                  that.imgUrl = that.informationImage.data;
+                  that.showList = false;
+                }
+              })
+              .catch((err) => console.log(err));
           } else {
             that.$message("该科普信息不存在");
           }
@@ -280,6 +335,14 @@ export default {
           that.total = res.data.totalElements;
         })
         .catch((error) => console.log(error));
+      this.$ajax
+        .get(
+          "http://localhost:8081/informationImage/findAll/" + currentPage + "/8"
+        )
+        .then((res) => {
+          that.informationImages = res.data.content;
+        })
+        .catch((error) => console.log(error));
     },
   },
   //开始时获取全部科普信息
@@ -290,6 +353,12 @@ export default {
       .then((res) => {
         that.informations = res.data.content;
         that.total = res.data.totalElements;
+      })
+      .catch((error) => console.log(error));
+    this.$ajax
+      .get("http://localhost:8081/informationImage/findAll/1/8")
+      .then((res) => {
+        that.informationImages = res.data.content;
       })
       .catch((error) => console.log(error));
   },
@@ -412,12 +481,51 @@ export default {
 .el-upload--picture-card {
   background: #fffffd !important;
 }
+.messageBox img {
+  width: 148px;
+  height: 148px;
+  overflow: hidden;
+}
+.messageBox .el-button:last-of-type {
+  position: absolute;
+}
+.deleteBox {
+  position: absolute;
+  width: 28%;
+  height: 15%;
+  background: #fff;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 3% 3% 0 3%;
+}
+.deleteContent {
+  font-size: 18px;
+  width: 100%;
+}
+.deleteContent i {
+  font-size: 25px;
+}
+.deleteButton {
+  position: relative;
+  top: 30%;
+  left: 70%;
+}
 h5 {
   cursor: pointer;
 }
 .details {
   white-space: pre-wrap;
   line-height: 20px;
+  height: 83%;
+}
+.details .image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.details img {
+  margin: 20px 0;
 }
 .details h4 {
   text-align: center;

@@ -33,12 +33,12 @@ public class InformationHandler {
   }
 
   @PostMapping("/save")
-  public String save(@RequestBody Information information) {
+  public Integer save(@RequestBody Information information) {
     Information result = informationRepository.save(information);
     if(result != null) {
-      return "success";
+      return result.getInformationid();
     } else {
-      return "error";
+      return null;
     }
   }
 

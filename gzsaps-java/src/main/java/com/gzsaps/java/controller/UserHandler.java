@@ -18,6 +18,11 @@ public class UserHandler {
     return userRepository.findAll();
   }
 
+  @GetMapping("/find/{username}")
+  public User find(@PathVariable("username") String username) {
+    return userRepository.findById(username).get();
+  }
+
   @GetMapping("/signUp/{username}/{password}")
   public User signUp (@PathVariable("username") String username,@PathVariable("password") String password) {
     User example = userRepository.findById(username).get();

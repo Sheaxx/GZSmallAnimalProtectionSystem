@@ -23,7 +23,7 @@
         :key="index"
         @click="toDetails(index)"
       >
-        <img :src="item.image" />
+        <img :src="adoptionImages[index].data" />
         <h5>{{ item.title }}</h5>
       </li>
     </ul>
@@ -59,10 +59,11 @@
               :on-change="handleChange"
               :show-file-list="true"
               :auto-upload="false"
-              :limit="8"
+              :limit="1"
               :class="{ hide: notShowUpload }"
             >
-              <i class="el-icon-plus"></i>
+              <img v-if="imgUrl" :src="imgUrl" />
+              <i v-else class="el-icon-plus"></i>
             </el-upload>
             <!-- <el-dialog :visible.sync="dialogVisible">
               <img width="100%" :src="dialogImageUrl" alt="" />
@@ -92,19 +93,31 @@
     </div>
 
     <div class="details" v-show="!showList">
-      <h4>{{ adoptionForm.title }}</h4>
-      <p>{{ adoptionForm.content }}</p>
-      <p class="detailsAdopter" v-if="adoptionForm.status == 1">
-        领养人用户名：{{ adoptionForm.adopter }}
-      </p>
-      <p class="detailsAdopttime" v-if="adoptionForm.status == 1">
-        领养时间：{{ adoptionForm.adopttime }}
-      </p>
+      <h4>NO.{{adoptionForm.adoptionid}}：{{ title }}</h4>
+      <div class="image">
+        <img v-if="adoptionImage.data" :src="imgUrl" alt="小动物照片" />
+      </div>
+      <p>{{ content }}</p>
+      <div
+        class="detailsAdopter"
+        v-if="
+          adoptionForm.adopter &&
+          ((adoptionForm.status == 1 &&
+            adoptionForm.author == nowUser) ||
+            $store.state.user.role == 2)
+        "
+      >
+        <p>领养人用户名：{{ adoptionForm.adopter }}</p>
+        <p>领养人真实姓名：{{ adopter.realname }}</p>
+        <p>领养人联系电话：{{ adopter.tel }}</p>
+        <p>领养人地址：{{ adopter.address }}</p>
+        <p>领养时间：{{ adoptionForm.adopttime }}</p>
+      </div>
       <div class="detailsButton">
         <el-button
           type="warning"
           @click="showAdopt = true"
-          v-if="adoptionForm.author != $store.state.user.username"
+          v-if="adoptionForm.author != nowUser"
           :disabled="adoptionForm.status == 1"
           >领养小动物</el-button
         >
@@ -113,7 +126,7 @@
           plain
           @click="openUpdateMessage"
           v-if="
-            adoptionForm.author == $store.state.user.username ||
+            adoptionForm.author == nowUser ||
             $store.state.user.role == 2
           "
           :disabled="adoptionForm.status == 1"
@@ -124,7 +137,7 @@
           plain
           @click="openDeleteMessage"
           v-if="
-            adoptionForm.author == $store.state.user.username ||
+            adoptionForm.author == nowUser ||
             $store.state.user.role == 2
           "
           :disabled="adoptionForm.status == 1"
@@ -132,10 +145,15 @@
         >
       </div>
       <el-divider><i class="el-icon-chat-line-round"></i></el-divider>
-      <el-timeline v-if="comments.length">
-        <el-timeline-item placement="top" v-for="(item,index) in comments" :key="index" :timestamp="item.createtime">
+      <el-timeline v-if="comments.length" class="comment">
+        <el-timeline-item
+          placement="top"
+          v-for="(item, index) in comments"
+          :key="index"
+          :timestamp="item.createtime"
+        >
           <el-card>
-            <p class="commentAuthor">{{ item.author }}</p>
+            <h6 class="commentAuthor">{{ item.author }}：</h6>
             <p class="commentContent">{{ item.content }}</p>
           </el-card>
         </el-timeline-item>
@@ -148,7 +166,9 @@
         class="commentEdit"
       ></el-input>
       <div>
-        <el-button type="warning" plain class="addComment" @click="addComment">发布评论</el-button>
+        <el-button type="warning" plain class="addComment" @click="addComment"
+          >发布评论</el-button
+        >
       </div>
     </div>
 
@@ -175,6 +195,7 @@ import getNowTime from "../utils/date";
 export default {
   data() {
     return {
+      nowUser:"",
       showList: true,
       showMessage: false,
       showDelete: false,
@@ -196,7 +217,18 @@ export default {
         adopter: "",
         adopttime: "",
       },
-      imageList: [],
+      adopter: {
+        username: "",
+        realname: "",
+        tel: "",
+        address: "",
+      },
+      adoptionImages: [],
+      adoptionImage: {
+        imageid: null,
+        data: "",
+        adoptionid: null,
+      },
       comments: [],
       commentForm: {
         commentid: null,
@@ -205,34 +237,47 @@ export default {
         createtime: "",
         adoptionid: null,
       },
+      title: "",
+      content: "",
+      imgUrl: "",
     };
   },
   methods: {
     //删除照片
     handleRemove(file, fileList) {
-      if (fileList.length < 8) {
+      if (fileList.length < 1) {
         this.notShowUpload = false;
       }
+      this.adoptionImage.data = "";
     },
     //照片上传按钮的动态显示
     handleChange(file, fileList) {
-      if (fileList.length >= 8) {
+      if (fileList.length >= 1) {
         this.notShowUpload = true;
       } else {
         this.notShowUpload = false;
       }
+      let reader = new FileReader();
+      reader.readAsDataURL(file.raw);
+      let that = this;
+      reader.onload = function () {
+        that.adoptionImage.data = reader.result;
+      };
     },
     //打开添加领养信息界面
     openAddMessage() {
       for (let item in this.adoptionForm) {
         this.adoptionForm[item] = null;
       }
+      for (let item in this.adoptionImage) {
+        this.adoptionImage[item] = null;
+      }
+      this.imgUrl = null;
       this.isAdd = true;
       this.showMessage = true;
     },
     //打开修改领养信息界面
     openUpdateMessage() {
-      Object.assign(this.adoptionForm, this.adoptions[index]);
       this.isAdd = false;
       this.showMessage = true;
     },
@@ -250,20 +295,31 @@ export default {
       let that = this;
       let obj = {};
       Object.assign(obj, this.adoptionForm);
-      obj.author = this.$store.state.user.username;
+      obj.author = this.nowUser;
+      let img = {};
+      Object.assign(img, this.adoptionImage);
       if (this.isAdd) {
         //新增领养信息
         obj.status = 0;
         this.$ajax
           .post("http://localhost:8081/adoption/save", obj)
           .then(function (res) {
-            if (res.data == "success") {
-              that.adoptions.unshift(obj);
-              that.showMessage = false;
-              that.$message({
-                message: "发布成功",
-                type: "success",
-              });
+            if (res.data) {
+              obj.adoptionid = res.data;
+              that.adoptions.push(obj);
+              img.adoptionid = obj.adoptionid;
+              that.$ajax
+                .post("http://localhost:8081/adoptionImage/save", img)
+                .then(function (res) {
+                  if (res.data == "success") {
+                    that.$router.go(0);
+                    that.$message({
+                      message: "发布成功",
+                      type: "success",
+                    });
+                  }
+                })
+                .catch((err) => console.log(err));
             }
           })
           .catch((err) => console.log(err));
@@ -274,12 +330,22 @@ export default {
           .put("http://localhost:8081/adoption/update", obj)
           .then(function (res) {
             if (res.data == "success") {
-              that.adoptions[that.currentIndex] = obj;
-              that.showMessage = false;
-              that.$message({
-                message: "修改成功",
-                type: "success",
-              });
+              that.$ajax
+                .put("http://localhost:8081/adoptionImage/update", img)
+                .then((res) => {
+                  if (res.data == "success") {
+                    that.adoptions[that.currentIndex] = obj;
+                    that.title = obj.title;
+                    that.content = obj.content;
+                    that.imgUrl = img.data;
+                    that.showMessage = false;
+                    that.$message({
+                      message: "修改成功",
+                      type: "success",
+                    });
+                  }
+                })
+                .catch((err) => console.log(err));
             }
           })
           .catch((err) => console.log(err));
@@ -301,6 +367,7 @@ export default {
         .then(function () {
           that.adoptions.splice(that.currentIndex, 1);
           that.showDelete = false;
+          that.showList = true;
           that.$message({
             message: "删除成功",
             type: "success",
@@ -312,11 +379,34 @@ export default {
     toDetails(index) {
       this.currentIndex = index;
       Object.assign(this.adoptionForm, this.adoptions[index]);
+      Object.assign(this.adoptionImage, this.adoptionImages[index]);
+      this.title = this.adoptionForm.title;
+      this.content = this.adoptionForm.content;
+      this.imgUrl = this.adoptionImage.data;
       let that = this;
-      this.$ajax.get("http://localhost:8081/comment/findAll/" + this.adoptionForm.adoptionid).then(function(res){
-        that.comments = res.data;
-      })
-      for(let item in this.commentForm) {
+      if (this.adoptionForm.adopter) {
+        this.$ajax
+          .get("http://localhost:8081/user/find/" + this.adoptionForm.adopter)
+          .then((res) => {
+            //获取领养人信息
+            that.adopter.username = res.data.username;
+            that.adopter.realname = res.data.realname;
+            that.adopter.tel = res.data.tel;
+            that.adopter.address = res.data.address;
+          })
+          .catch((err) => console.log(err));
+      }
+      this.$ajax
+        .get(
+          "http://localhost:8081/comment/findAll/" +
+            this.adoptionForm.adoptionid
+        )
+        .then(function (res) {
+          //获取评论列表
+          that.comments = res.data;
+        })
+        .catch((err) => console.log(err));
+      for (let item in this.commentForm) {
         this.commentForm[item] = null;
       }
       this.showList = false;
@@ -333,7 +423,34 @@ export default {
         .then(function (res) {
           if (res.data) {
             Object.assign(that.adoptionForm, res.data);
-            that.showList = false;
+            that.$ajax
+              .get(
+                "http://localhost:8081/adoptionImage/find/" +
+                  that.adoptionForm.adoptionid
+              )
+              .then((res) => {
+                if (res.data) {
+                  Object.assign(that.adoptionImage, res.data);
+                  that.title = that.adoptionForm.title;
+                  that.content = that.adoptionForm.content;
+                  that.imgUrl = that.adoptionImage.data;
+                  that.$ajax
+                    .get(
+                      "http://localhost:8081/comment/findAll/" +
+                        that.adoptionForm.adoptionid
+                    )
+                    .then(function (res) {
+                      //获取评论列表
+                      that.comments = res.data;
+                    })
+                    .catch((err) => console.log(err));
+                  for (let item in that.commentForm) {
+                    that.commentForm[item] = null;
+                  }
+                  that.showList = false;
+                }
+              })
+              .catch((err) => console.log(err));
           } else {
             that.$message("该领养信息不存在");
           }
@@ -343,10 +460,13 @@ export default {
     //确认领养
     adopt() {
       let that = this;
-      for(let item in this.$store.state.user) {
-        if(this.$store.state.user[item] == null || this.$store.state.user[item] == "") {
+      for (let item in this.$store.state.user) {
+        if (
+          this.$store.state.user[item] == null ||
+          this.$store.state.user[item] == ""
+        ) {
           this.$message("请先完善个人信息");
-          return ;
+          return;
         }
       }
       this.$ajax
@@ -367,15 +487,18 @@ export default {
     addComment() {
       let that = this;
       let obj = {};
-      Object.assign(obj,this.commentForm);
+      Object.assign(obj, this.commentForm);
       obj.adoptionid = this.adoptionForm.adoptionid;
-      obj.author = this.$store.state.user.username;
-      this.$ajax.post("http://localhost:8081/comment/save",obj).then(function(res){
-        if (res.data == "success") {
-          that.comments.push(obj);
-          that.$message.success("发布评论成功");
-        }
-      }).catch((err) => console.log(err));
+      obj.author = this.nowUser;
+      this.$ajax
+        .post("http://localhost:8081/comment/save", obj)
+        .then(function (res) {
+          if (res.data == "success") {
+            that.comments.push(obj);
+            that.$message.success("发布评论成功");
+          }
+        })
+        .catch((err) => console.log(err));
     },
     //分页改变
     page(currentPage) {
@@ -387,16 +510,31 @@ export default {
           that.total = res.data.totalElements;
         })
         .catch((error) => console.log(error));
+      this.$ajax
+        .get(
+          "http://localhost:8081/adoptionImage/findAll/" + currentPage + "/8"
+        )
+        .then((res) => {
+          that.adoptionImages = res.data.content;
+        })
+        .catch((error) => console.log(error));
     },
   },
   //开始时获取全部领养信息
   created() {
+    this.nowUser = window.localStorage.getItem("username");
     let that = this;
     this.$ajax
       .get("http://localhost:8081/adoption/findAll/1/8")
       .then((res) => {
         that.adoptions = res.data.content;
         that.total = res.data.totalElements;
+      })
+      .catch((error) => console.log(error));
+    this.$ajax
+      .get("http://localhost:8081/adoptionImage/findAll/1/8")
+      .then((res) => {
+        that.adoptionImages = res.data.content;
       })
       .catch((error) => console.log(error));
   },
@@ -519,6 +657,14 @@ export default {
 .el-upload--picture-card {
   background: #fffffd !important;
 }
+.messageBox img {
+  width: 148px;
+  height: 148px;
+  overflow: hidden;
+}
+.messageBox .el-button:last-of-type {
+  position: absolute;
+}
 .deleteBox,
 .adoptBox {
   position: absolute;
@@ -554,7 +700,15 @@ h5 {
   padding: 2%;
   overflow: auto;
   height: 83%;
-  zoom: 1;
+}
+.details .image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.details img {
+  margin: 20px 0;
+  width: 400px;
 }
 .details h4 {
   text-align: center;
@@ -565,7 +719,7 @@ h5 {
   margin: 10px 5%;
 }
 .el-divider__text {
-  background: #FCFAF1;
+  background: #fcfaf1;
   font-size: 18px;
 }
 .el-divider {
@@ -573,6 +727,13 @@ h5 {
 }
 .details .el-timeline {
   padding: 0 5%;
+}
+.comment h6 {
+  font-size: 13px;
+  color: grey;
+}
+.comment p {
+  font-size: 14px;
 }
 .commentEdit {
   width: 80%;
@@ -588,8 +749,11 @@ h5 {
   margin-bottom: 20px;
 }
 .addComment {
-  float:right;
+  float: right;
   margin-top: 10px;
   margin-right: 10%;
+}
+.detailsAdopter {
+  margin-top: 20px;
 }
 </style>

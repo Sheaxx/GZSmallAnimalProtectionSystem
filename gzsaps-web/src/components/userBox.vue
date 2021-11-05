@@ -1,22 +1,22 @@
 <template>
   <div id="userBox">
-    <span class="userInfo">欢迎你，{{ $store.state.user.username }}！</span>
+    <span class="userInfo">欢迎你，{{ nowUser }}！</span>
     <img src="../assets/image/avatar.png" alt="头像" @click="showExit = true" />
-    
+
     <div class="coverBox" v-show="showExit">
-    <div class="exitBox">
-      <div class="exitContent">
-        <i class="el-icon-warning-outline"></i>
-        <span>确定退出登录吗？</span>
-      </div>
-      <div class="exitButton">
-        <el-button type="warning" plain @click="showExit = false"
-          >取消</el-button
-        >
-        <el-button type="warning" @click="exit">确定</el-button>
+      <div class="exitBox">
+        <div class="exitContent">
+          <i class="el-icon-warning-outline"></i>
+          <span>确定退出登录吗？</span>
+        </div>
+        <div class="exitButton">
+          <el-button type="warning" plain @click="showExit = false"
+            >取消</el-button
+          >
+          <el-button type="warning" @click="exit">确定</el-button>
+        </div>
       </div>
     </div>
-  </div>
   </div>
 </template>
 
@@ -24,16 +24,20 @@
 export default {
   data() {
     return {
-      showExit:false
+      nowUser:"",
+      showExit: false,
     };
   },
   methods: {
     exit() {
-      this.$store.commit("exit");
+      window.localStorage.removeItem("username");
       this.$router.replace("/login");
       this.$message.success("退出登录成功");
     },
   },
+  created() {
+    this.nowUser = window.localStorage.getItem("username");
+  }
 };
 </script>
 
@@ -56,11 +60,11 @@ export default {
   width: 65px;
   height: 65px;
 }
-.coverBox {
+#userBox .coverBox {
   position: absolute;
   z-index: 999;
-  width: 100vw;
-  height: 99.4vh;
+  width: 99.7vw;
+  height: 99.8vh;
   top: 0vh;
   left: 0vw;
   background: rgba(0, 0, 0, 0.3);

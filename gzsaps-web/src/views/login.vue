@@ -113,9 +113,12 @@ export default {
           )
           .then(function (res) {
             if (res.data) {
-              let obj = {};
-              Object.assign(obj, res.data);
-              that.$store.commit("setUser", obj);
+              window.localStorage.setItem("username",that.signUpForm.username);
+              window.localStorage.setItem("password",that.signUpForm.password);
+              window.localStorage.setItem("realname",res.data.realname);
+              window.localStorage.setItem("address",res.data.address);
+              window.localStorage.setItem("tel",res.data.tel);
+              window.localStorage.setItem("role",res.data.role);
               that.$router.replace("/user");
               that.$message({
                 message: "登录成功",
@@ -129,6 +132,10 @@ export default {
       }
     },
   },
+  created() {
+    console.log(window.localStorage.getItem("username"));
+  }
+  
 };
 </script>
 

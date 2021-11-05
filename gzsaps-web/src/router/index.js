@@ -3,6 +3,7 @@ import VueRouter from 'vue-router'
 
 import User from '../views/user'
 import Index from '../views/index'
+import store from '../store'
 
 Vue.use(VueRouter)
 
@@ -16,8 +17,8 @@ const routes = [
 		component: Index,
 		children: [
 			{
-				path:'/user',
-				component:User
+				path: '/user',
+				component: User
 			},
 			{
 				path: '/notice',
@@ -48,5 +49,14 @@ const router = new VueRouter({
 	base: process.env.BASE_URL,
 	routes
 })
+
+// router.beforeEach((to,from,next) => {
+// 	if(to.path != "/login" && store.state.user.username == "") {
+// 		next("/login");
+// 		alert("请先登录");
+// 	} else {
+// 		next();
+// 	}
+// })
 
 export default router

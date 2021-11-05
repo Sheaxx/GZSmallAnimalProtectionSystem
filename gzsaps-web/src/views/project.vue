@@ -3,15 +3,33 @@
     <h4 class="boxTitle"><i class="el-icon-s-flag"></i>志愿者项目</h4>
     <el-button
       type="warning"
+      @click="toAudit"
+      v-show="showList && $store.state.user.role == 2"
+      class="topLeftButton"
+      >审核未发布项目
+    </el-button>
+    <el-button
+      type="warning"
       @click="openAddMessage"
-      v-show="showList && $store.state.user.role != 0"
+      v-show="(showList || showAudit) && $store.state.user.role != 0"
       class="topButton"
       >添加项目</el-button
     >
-    <el-button type="warning" @click="toList" v-show="!showList" class="topButton"
+    <el-button
+      type="warning"
+      @click="toAll"
+      v-show="showAudit && $store.state.user.role == 2"
+      class="topLeftButton"
+      >返回查看全部
+    </el-button>
+    <el-button
+      type="warning"
+      @click="toList"
+      v-show="!showList && !showAudit"
+      class="topButton"
       >返回列表</el-button
     >
-    <div class="search" v-show="showList">
+    <div class="search" v-show="showList || showAudit">
       <el-input
         placeholder="请输入志愿者项目编号"
         v-model="searchid"
@@ -20,13 +38,14 @@
         >搜索</el-button
       >
     </div>
-    <el-timeline v-show="showList">
+    <el-timeline v-show="showList || showAudit">
       <el-timeline-item
         placement="top"
         color="#ff7f41"
         v-for="(item, index) in projects"
         :key="index"
         :timestamp="item.createtime"
+        v-if="showList || (showAudit && item.status == 0)"
       >
         <el-card>
           <h5 @click="toDetails(index)">
@@ -35,6 +54,7 @@
         </el-card>
       </el-timeline-item>
     </el-timeline>
+
     <el-pagination
       layout="prev, pager, next"
       :total="total"
@@ -54,7 +74,7 @@
             <el-input
               type="textarea"
               v-model="projectForm.content"
-              rows="11"
+              rows="8"
               resize="none"
               show-word-limit
             ></el-input>
@@ -102,20 +122,18 @@
       </div>
     </div>
 
-    <div class="details" v-show="!showList">
-      <h4>{{ projectForm.title }}</h4>
-      <p class="detailsContent">{{ projectForm.content }}</p>
-      <p class="detailsAddress">活动地址：{{ projectForm.address }}</p>
+    <div class="details" v-show="!showList && !showAudit">
+      <h4>{{ title }}</h4>
+      <p class="detailsContent">{{ content }}</p>
+      <p class="detailsAddress">活动地址：{{ address }}</p>
       <p class="detailsTime">
         活动时间：{{ projectForm.begintime }} - {{ projectForm.endtime }}
       </p>
-      <p class="detailsPrincipal">负责人：{{ projectForm.principal }}</p>
-      <p class="detailsPrincipalTel">
-        负责人联系方式：{{ projectForm.principaltel }}
-      </p>
+      <p class="detailsPrincipal">负责人：{{ principal }}</p>
+      <p class="detailsPrincipalTel">负责人联系方式：{{ principaltel }}</p>
       <p
         class="datails"
-        v-if="projectForm.author == $store.state.user.username"
+        v-if="projectForm.author == nowUser"
       >
         已报名用户：{{ projectForm.applicantlist }}
       </p>
@@ -126,13 +144,18 @@
         </p>
       </div>
       <div class="detailsButton">
-        <el-button type="warning" @click="apply">报名参加</el-button>
+        <el-button
+          type="warning"
+          @click="apply"
+          :disabled="projectForm.status != 1"
+          >报名参加</el-button
+        >
         <el-button
           type="warning"
           plain
           @click="openUpdateMessage"
           v-if="
-            projectForm.author == $store.state.user.username ||
+            projectForm.author == nowUser ||
             $store.state.user.role == 2
           "
           >修改</el-button
@@ -142,7 +165,7 @@
           plain
           @click="openDeleteMessage"
           v-if="
-            projectForm.author == $store.state.user.username ||
+            projectForm.author == nowUser ||
             $store.state.user.role == 2
           "
           >删除</el-button
@@ -150,9 +173,17 @@
         <el-button
           type="warning"
           plain
+          @click="pass"
+          v-if="$store.state.user.role == 2 && projectForm.status == 0"
+        >
+          审核通过
+        </el-button>
+        <el-button
+          type="warning"
+          plain
           @click="showCutoff = true"
           v-if="
-            projectForm.author == $store.state.user.username &&
+            projectForm.author == nowUser &&
             projectForm.status == 1
           "
           >截止报名</el-button
@@ -183,16 +214,20 @@ import getNowTime from "../utils/date";
 export default {
   data() {
     return {
+      nowUser:"",
       showList: true,
       showMessage: false,
       showDelete: false,
       showCutoff: false,
+      showAudit: false,
+      fromList: true,
       isAdd: false,
       currentIndex: 0,
       total: 0,
       searchid: null,
       time: [],
       projects: [],
+      AuditProjects: [],
       projectForm: {
         projectid: null,
         title: "",
@@ -206,6 +241,11 @@ export default {
         lastmodifiedtime: "",
         applicantlist: "",
       },
+      title: "",
+      content: "",
+      address: "",
+      principal: "",
+      principaltel: "",
     };
   },
   methods: {
@@ -238,14 +278,10 @@ export default {
     onSubmit() {
       let that = this;
       let obj = {};
-      obj.title = this.projectForm.title;
-      obj.content = this.projectForm.content;
-      obj.address = this.projectForm.address;
+      Object.assign(obj, this.projectForm);
       obj.begintime = this.time[0];
       obj.endtime = this.time[1];
-      obj.principal = this.projectForm.principal;
-      obj.principaltel = this.projectForm.principaltel;
-      obj.author = this.$store.state.user.username;
+      obj.author = this.nowUser;
       if (this.isAdd) {
         //新增项目
         if (this.$store.state.user.role == 1) {
@@ -289,8 +325,12 @@ export default {
           .then(function (res) {
             if (res.data == "success") {
               that.projects[that.currentIndex] = obj;
+              that.title = obj.title;
+              that.content = obj.content;
+              that.address = obj.address;
+              that.principal = obj.principal;
+              that.principaltel = obj.principaltel;
               that.showMessage = false;
-
               that.$message({
                 message: "修改成功",
                 type: "success",
@@ -316,6 +356,7 @@ export default {
         .then(function () {
           that.projects.splice(that.currentIndex, 1);
           that.showDelete = false;
+          that.toList();
           that.$message({
             message: "删除成功",
             type: "success",
@@ -326,12 +367,24 @@ export default {
     //查看详情
     toDetails(index) {
       this.currentIndex = index;
-      this.showList = false;
       Object.assign(this.projectForm, this.projects[index]);
+      this.title = this.projectForm.title;
+      this.content = this.projectForm.content;
+      this.address = this.projectForm.address;
+      this.principal = this.projectForm.principal;
+      this.principaltel = this.projectForm.principaltel;
+      this.showList = false;
+      this.showAudit = false;
     },
     //详情返回列表
     toList() {
-      this.showList = true;
+      if (this.fromList) {
+        this.showList = true;
+        this.showAudit = false;
+      } else {
+        this.showList = false;
+        this.showAudit = true;
+      }
     },
     //搜索
     search() {
@@ -341,6 +394,11 @@ export default {
         .then(function (res) {
           if (res.data) {
             Object.assign(that.projectForm, res.data);
+            that.title = that.projectForm.title;
+            that.content = that.projectForm.content;
+            that.address = that.projectForm.address;
+            that.principal = that.projectForm.principal;
+            that.principaltel = that.projectForm.principaltel;
             that.showList = false;
           } else {
             that.$message("该志愿者项目不存在");
@@ -357,7 +415,7 @@ export default {
         this.$ajax
           .put(
             "http://localhost:8081/project/apply/" +
-              this.$store.state.user.username +
+              this.nowUser +
               "/" +
               this.projectForm.projectid
           )
@@ -380,11 +438,41 @@ export default {
         )
         .then(function (res) {
           if (res.data == "success") {
+            that.projectForm.status = 2;
+            that.projects[that.currentIndex].status = 2;
             that.$message.success("已截止报名");
           } else {
             that.$message.error("截止报名失败");
           }
           that.showCutoff = false;
+        })
+        .catch((err) => console.log(err));
+    },
+    //管理员查看未审核项目
+    toAudit() {
+      this.showList = false;
+      this.showAudit = true;
+      this.fromList = false;
+    },
+    //返回查看全部
+    toAll() {
+      this.showList = true;
+      this.showAudit = false;
+      this.fromList = true;
+    },
+    //管理员审核项目通过
+    pass() {
+      let that = this;
+      this.$ajax
+        .put("http://localhost:8081/project/pass/" + this.projectForm.projectid)
+        .then((res) => {
+          if (res.data == "success") {
+            that.projectForm.status = 1;
+            that.projects[that.currentIndex].status = 1;
+            that.$message.success("审核通过");
+          } else {
+            that.$message.error("操作失败");
+          }
         })
         .catch((err) => console.log(err));
     },
@@ -402,6 +490,7 @@ export default {
   },
   //开始时获取全部项目
   created() {
+    this.nowUser = window.localStorage.getItem("username");
     let that = this;
     this.$ajax
       .get("http://localhost:8081/project/findAll/1/6")
@@ -429,6 +518,11 @@ export default {
   margin-bottom: 2%;
   overflow: hidden;
   width: 90%;
+}
+.topLeftButton {
+  float: right;
+  margin-top: -5%;
+  margin-right: 12%;
 }
 .topButton {
   float: right;
@@ -513,6 +607,9 @@ export default {
 .el-textarea__inner:focus {
   border-color: #ff7f41;
 }
+.messageBox .el-button:last-of-type {
+  position: absolute;
+}
 .deleteBox,
 .cutoffBox {
   position: absolute;
@@ -544,8 +641,7 @@ h5 {
 }
 .details {
   overflow: auto;
-  height: 91%;
-  zoom: 1;
+  height: 83%;
 }
 .detailsContent {
   white-space: pre-wrap;

@@ -17,7 +17,7 @@ public class CommentHandler {
   private CommentRepository commentRepository;
 
   @GetMapping("/findAll/{id}")
-  public List<Comment> findAll(@PathVariable("id") Integer id) {
+  public List<Comment> findAll(@PathVariable("id") Integer id) {//查看某条领养信息下的所有评论
     List<Comment> list = commentRepository.findAll();
     List<Comment> result = new ArrayList<>();
     for(int i=0;i<list.size();i++) {
@@ -29,7 +29,7 @@ public class CommentHandler {
   }
 
   @PostMapping("/save")
-  public String save(@RequestBody Comment comment) {
+  public String save(@RequestBody Comment comment) {//添加评论
     comment.setCreatetime(new Date());
     Comment result = commentRepository.save(comment);
     if(result != null) {

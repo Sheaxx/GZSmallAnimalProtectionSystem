@@ -11,6 +11,7 @@
 <script>
 import Menu from "../components/menu.vue";
 import User from "../components/userBox.vue";
+
 export default {
   components: { Menu, User },
 };

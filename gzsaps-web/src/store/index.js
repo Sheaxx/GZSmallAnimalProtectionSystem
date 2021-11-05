@@ -6,11 +6,11 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   state: {
     user: {
-      username: "abc",
-      password: "",
-      realname: "",
-      tel: "",
-      address: "",
+      username: "aaa",
+      password: "aaa",
+      realname: "aa",
+      tel: "aa",
+      address: "aa",
       role: 2
     }
   },

@@ -16,6 +16,13 @@
             @click="openEdit"
             >编辑个人信息</el-button
           >
+          <el-button
+            type="warning"
+            size="small"
+            v-if="user.role == 0"
+            @click="beVolunteer"
+            >申请成为志愿者</el-button
+          >
         </template>
         <el-descriptions-item>
           <template slot="label">
@@ -81,27 +88,27 @@
     </div>
 
     <div id="userAdoption">
-      <div class="title">个人领养信息</div>
+      <div class="title">我发布的领养信息</div>
       <el-timeline v-if="adoptions.length">
         <el-timeline-item
           v-for="(item, index) in adoptions"
           :key="index"
-          :timestamp="item.timestamp"
+          :timestamp="item.lastmodifiedtime"
         >
-          {{ item.content }}
+          {{ item.title }}
         </el-timeline-item>
       </el-timeline>
       <el-empty description="暂无数据" :image-size="50" v-else></el-empty>
     </div>
     <div id="userProject">
-      <div class="title">个人志愿者项目</div>
+      <div class="title">我报名的志愿者项目</div>
       <el-timeline v-if="projects.length">
         <el-timeline-item
           v-for="(item, index) in projects"
           :key="index"
-          :timestamp="item.timestamp"
+          :timestamp="item.begintime"
         >
-          {{ item.content }}
+          {{ item.title }}
         </el-timeline-item>
       </el-timeline>
       <el-empty description="暂无数据" :image-size="100" v-else></el-empty>
@@ -124,6 +131,7 @@ export default {
       },
       adoptions: [],
       projects: [],
+      callbacks: [],
     };
   },
   methods: {
@@ -132,7 +140,7 @@ export default {
       let that = this;
       let obj = {};
       Object.assign(obj, this.user);
-      if(obj.role == "普通用户") {
+      if (obj.role == "普通用户") {
         obj.role = 0;
       } else if (obj.role == "志愿者") {
         obj.role = 1;
@@ -143,13 +151,17 @@ export default {
         .put("http://localhost:8081/user/update", obj)
         .then(function (res) {
           if (res.data == "success") {
-            that.$store.commit("setUser", obj);
+            window.localStorage.setItem("password",obj.password);
+            window.localStorage.setItem("realname",obj.realname);
+            window.localStorage.setItem("tel",obj.tel);
+            window.localStorage.setItem("address",obj.address);
             that.$message({
               message: "修改成功",
               type: "success",
             });
           }
-        }).catch((err) => console.log(err));
+        })
+        .catch((err) => console.log(err));
       this.readOnly = true;
     },
     //打开修改
@@ -160,11 +172,41 @@ export default {
     cancelEdit() {
       this.readOnly = true;
     },
+    //申请成为志愿者
+    beVolunteer() {
+      for (let item in this.user) {
+        if (this.user[item] == "") {
+          this.$message("请填写完毕个人信息");
+          return;
+        }
+      }
+      let obj = {};
+      Object.assign(obj, this.user);
+      obj.role = 1;
+      let that = this;
+      this.$ajax
+        .put("http://localhost:8081/user/update", obj)
+        .then(function (res) {
+          if (res.data == "success") {
+            window.localStorage.setItem("role",1);
+            that.user.role = "志愿者";
+            that.$message({
+              message: "欢迎你加入志愿者！",
+              type: "success",
+            });
+          }
+        })
+        .catch((err) => console.log(err));
+    },
   },
   created() {
-    console.log(this.$store.state.user);
+    this.user.username = window.localStorage.getItem("username");
+    this.user.password = window.localStorage.getItem("password");
+    this.user.realname = window.localStorage.getItem("realname");
+    this.user.address = window.localStorage.getItem("address");
+    this.user.tel = window.localStorage.getItem("tel");
+    this.user.role = window.localStorage.getItem("role");
     let that = this;
-    Object.assign(this.user, this.$store.state.user);
     if (this.user.role == 0) {
       this.user.role = "普通用户";
     } else if (this.user.role == 1) {
@@ -173,17 +215,39 @@ export default {
       this.user.role = "管理员";
     }
     this.$ajax
-      .get("http://localhost:8081/adoption/findAll/1/8")
+      .get(
+        "http://localhost:8081/adoption/userAdd/" +
+          this.user.username
+      )
       .then((res) => {
-        that.adoptions = res.data.content.slice(0, 5);
+        that.adoptions = res.data.slice(0, 3);
       })
       .catch((error) => console.log(error));
     this.$ajax
-      .get("http://localhost:8081/project/findAll/1/8")
+      .get(
+        "http://localhost:8081/project/userApply/" +
+          this.user.username
+      )
       .then((res) => {
-        that.projects = res.data.content;
+        that.projects = res.data.slice(0, 8);
       })
       .catch((error) => console.log(error));
+    if (this.user.role == 2) {
+      this.$ajax
+        .get("http://localhost:8081/adoption/callback")
+        .then((res) => {
+          that.callbacks = res.data;
+          if (that.callbacks.length) {
+            that.$notify({
+              title: "需要进行回访的领养信息编号",
+              message: that.callbacks,
+              position: "bottom-right",
+              duration: 0,
+            });
+          }
+        })
+        .catch((error) => console.log(error));
+    }
   },
 };
 </script>
